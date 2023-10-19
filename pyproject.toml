@@ -1,0 +1,21 @@
+[project]
+name = "ecobud-server"
+version = "0.1.0"
+description = "APIs for the ecobud app."
+authors = [
+    {name = "Marco", email = "pistilli.mrc@gmail.com"}
+]
+readme = "README.md"
+dependencies = [
+    "flask"
+]
+
+[project.optional-dependencies]
+dev = ["black", "pytest"]
+
+[build-system]
+requires = ["setuptools"]
+
+[tool.black]
+line-length = 140
+target-version = ["py37"]
