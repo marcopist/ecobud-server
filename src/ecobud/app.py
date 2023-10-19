@@ -1,11 +1,7 @@
-from flask import Flask
-from flask import request
-
+from flask import Flask, request
 
 app = Flask(__name__)
 
-@app.route("/wehbooks/tink/transactions", methods=["POST"])
-def webhook_tink_transaction():
-    data = request.form
-    return data
-
+@app.route("/hello", methods=["POST"])
+def hello():
+    return request.json

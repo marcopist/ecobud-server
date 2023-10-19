@@ -7,7 +7,8 @@ authors = [
 ]
 readme = "README.md"
 dependencies = [
-    "flask"
+    "flask<3.0.0",
+    "flask-swagger-ui"
 ]
 
 [project.optional-dependencies]
