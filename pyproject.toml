@@ -3,16 +3,18 @@ name = "ecobud-server"
 version = "0.1.0"
 description = "APIs for the ecobud app."
 authors = [
-    {name = "Marco", email = "pistilli.mrc@gmail.com"}
+    {name = "Marco Pistilli", email = "pistilli.mrc@gmail.com"}
 ]
 readme = "README.md"
 dependencies = [
-    "flask<3.0.0",
-    "flask-swagger-ui"
+    "flask",
+    "pymongo",
+    "requests",
+    "curlify",
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pytest"]
+dev = ["black", "pytest", "isort"]
 
 [build-system]
 requires = ["setuptools"]
