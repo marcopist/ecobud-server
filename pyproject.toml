@@ -11,6 +11,7 @@ dependencies = [
     "pymongo",
     "requests",
     "curlify",
+    "bcrypt",
 ]
 
 [project.optional-dependencies]
@@ -20,5 +21,5 @@ dev = ["black", "pytest", "isort"]
 requires = ["setuptools"]
 
 [tool.black]
-line-length = 140
+line-length = 100
 target-version = ["py37"]
