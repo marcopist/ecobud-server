@@ -35,4 +35,3 @@ def handle_callback_bank_connection(credentials_id, state):
     users_collection.replace_one({"username": user}, user_record)
     del user_record["_id"]
     return user_record
-

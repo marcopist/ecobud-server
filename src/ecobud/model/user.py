@@ -3,15 +3,9 @@ import logging
 import bcrypt
 import requests as re
 
-from ecobud import tink
 from ecobud.config import SELF_BASE_URL
+from ecobud.connections import tink
 from ecobud.connections.mongo import users_collection
-from ecobud.connections.tink import (
-    TINK_BASE_URL,
-    TINK_CLIENT_ID,
-    get_tink_client_access_token,
-    get_user_authorization_code,
-)
 from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)

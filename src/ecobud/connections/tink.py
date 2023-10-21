@@ -1,4 +1,5 @@
 import logging
+import sys
 import urllib.parse
 
 import cachetools.func
@@ -13,6 +14,8 @@ from ecobud.config import (
 from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
@@ -31,16 +34,23 @@ def get_client_token(scope, grant_type="client_credentials"):
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_user_authorization_code(username, scope):
+def get_user_authorization_code(username, scope, delegate = False, **kwargs):
     client_token = get_client_token(
         scope="authorization:grant",
         grant_type="client_credentials",
     )
     url = TINK_BASE_URL + "/api/v1/oauth/authorization-grant"
+
+    if delegate:
+        url += "/delegate"
+
     headers = {"Authorization": "Bearer " + client_token}
     data = {
-        "external_user_id": username,
-        "scope": scope,
+        **{
+            "external_user_id": username,
+            "scope": scope,
+        },
+        **kwargs,
     }
     response = re.post(url=url, data=data, headers=headers)
     logger.debug(f"Sent request {curl(response)}")
@@ -116,14 +126,16 @@ def get_bank_connection_url(username):
             "providers:read,"
             "user:read"
         ),
+        delegate=True,
+        actor_client_id="df05e4b379934cd09963197cc855bfe9",
+        id_hint="hint"
     )
-    redirect_to = "https://www.test.com/"
+    redirect_to = SELF_BASE_URL + "/bank/callback"
     encoded_redirect_to = urllib.parse.quote_plus(redirect_to)
     bank_connection_url = (
         f"https://link.tink.com/1.0/transactions/connect-accounts"
         f"?client_id={TINK_CLIENT_ID}"
-        # f"&state={state}"
-        f"&redirect_uri={encoded_redirect_to}"
+        f"&redirect_uri={redirect_to}"
         f"&authorization_code={user_authorization_code}"
         "&market=GB"
         "&locale=en_US"
@@ -135,4 +147,4 @@ def get_bank_connection_url(username):
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(get_bank_connection_url("test1"))
+    pprint(get_user_transactions("test1"))

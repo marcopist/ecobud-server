@@ -2,10 +2,12 @@ import logging
 
 from flask import Flask, request, session
 
-from ecobud.model.bank import (
-    get_bank_connection_url,
-    handle_callback_bank_connection,
-)
+from ecobud.connections.tink import get_bank_connection_url
+
+# from ecobud.model.bank import (
+#     get_bank_connection_url,
+#     handle_callback_bank_connection,
+# )
 from ecobud.model.user import (
     UserAlreadyExists,
     UserNotFound,
@@ -56,3 +58,12 @@ def bank_post():
         return {"error": "Not logged in"}, 401
     bank_connection_url = get_bank_connection_url(username)
     return {"url": bank_connection_url}
+
+
+@app.route("/bank/callback", methods=["GET"])
+def bank_callback_get():
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    code = request.args.get("code")
+    return {"success": True}
