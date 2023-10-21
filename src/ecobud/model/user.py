@@ -46,6 +46,19 @@ def _register_user_with_tink(username):
 
     return tink_user_id
 
+def _get_tink_user_id(username):
+    tink_client_access_token = get_tink_client_access_token(scope="user:read")
+    url = TINK_BASE_URL + "/api/v1/user"
+    headers = {
+        "Authorization": "Bearer " + tink_client_access_token
+    }
+    response = re.get(url=url, headers=headers)
+    logger.debug(f"Sent request {curl(response)}")
+    logger.debug(f"Got response {fmt_response(response)}")
+    response_data = response.json()
+    tink_user_id = response_data["id"]
+    return tink_user_id
+
 
 def create_user(username, email, password):
     logger.debug(f"Creating user {username}")
@@ -58,6 +71,8 @@ def create_user(username, email, password):
     try:
         tink_user_id = _register_user_with_tink(username)
     except TinkUserAlreadyExists:
+        logger.debug(f"User {username} already exists in Tink")
+        tink_user_id = _get_tink_user_id(username)
         pass
 
     salt = bcrypt.gensalt()
