@@ -12,6 +12,7 @@ dependencies = [
     "requests",
     "curlify",
     "bcrypt",
+    "cachetools",
 ]
 
 [project.optional-dependencies]
@@ -21,5 +22,5 @@ dev = ["black", "pytest", "isort"]
 requires = ["setuptools"]
 
 [tool.black]
-line-length = 100
+line-length = 70
 target-version = ["py37"]
