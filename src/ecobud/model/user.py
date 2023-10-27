@@ -79,3 +79,6 @@ def _get_user(username):
     if user is None:
         raise UserNotFound(f"User {username} not found")
     return user
+
+if __name__ == "__main__":
+    login_user("test7", "ciao")

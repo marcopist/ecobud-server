@@ -143,6 +143,13 @@ def get_bank_connection_url(username):
 
     return bank_connection_url
 
+def register_transaction_webhook(username):
+    client_token = get_client_token("authorization:grant,user:create")
+    url = TINK_BASE_URL + "/events/v2/webhook-endpoints"
+    headers = {
+        "Authorization": "Bearer " + client_token,
+        "Content-Type": "application/json",
+    }
 
 if __name__ == "__main__":
     from pprint import pprint
