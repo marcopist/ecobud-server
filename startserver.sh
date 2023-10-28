@@ -1,1 +1,0 @@
-gunicorn --workers=2 src.ecobud.app:app

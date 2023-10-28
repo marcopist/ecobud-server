@@ -5,4 +5,4 @@ WORKDIR /app
 
 RUN pip install .
 
-CMD source /app/startserver.sh
+CMD gunicorn --workers=2 src.ecobud.app:app
