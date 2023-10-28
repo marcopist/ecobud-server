@@ -180,4 +180,8 @@ def register_transaction_webhook(webhook_url=None):
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(register_transaction_webhook("https://eo1646zh7a3dxpc.m.pipedream.net"))
+    pprint(
+        register_transaction_webhook(
+            "https://eo1646zh7a3dxpc.m.pipedream.net"
+        )
+    )
