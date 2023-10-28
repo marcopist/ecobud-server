@@ -5,10 +5,12 @@ import requests as re
 
 from ecobud.config import SELF_BASE_URL
 from ecobud.connections import tink
-from ecobud.connections.mongo import users_collection
+from ecobud.connections.mongo import collections
 from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)
+
+usersdb = collections["users"]
 
 
 class UserAlreadyExists(Exception):
@@ -56,7 +58,7 @@ def create_user(username, email, password):
     }
 
     logger.debug(f"Saving user {username}")
-    users_collection.insert_one(user)
+    usersdb.insert_one(user)
     logger.debug(f"User {username} created")
     return True
 
@@ -75,10 +77,13 @@ def login_user(username, password):
 
 def _get_user(username):
     logger.debug(f"Getting user {username}")
-    user = users_collection.find_one({"username": username})
+    user = usersdb.find_one({"username": username})
     if user is None:
         raise UserNotFound(f"User {username} not found")
     return user
 
+
 if __name__ == "__main__":
-    login_user("test7", "ciao")
+    print(
+        create_user("test0", email="test0@test.com", password="test0")
+    )

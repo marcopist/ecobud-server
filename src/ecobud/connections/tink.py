@@ -34,7 +34,9 @@ def get_client_token(scope, grant_type="client_credentials"):
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_user_authorization_code(username, scope, delegate = False, **kwargs):
+def get_user_authorization_code(
+    username, scope, delegate=False, **kwargs
+):
     client_token = get_client_token(
         scope="authorization:grant",
         grant_type="client_credentials",
@@ -103,6 +105,16 @@ def get_user(username):
     return response.json()
 
 
+def delete_user(username):
+    user_token = get_user_token(username, "user:delete")
+    url = TINK_BASE_URL + "/api/v1/user/delete"
+    headers = {"Authorization": "Bearer " + user_token}
+    response = re.post(url=url, headers=headers)
+    logger.debug(f"Sent request {curl(response)}")
+    logger.debug(f"Got response {fmt_response(response)}")
+    return response.json()
+
+
 def get_user_transactions(username):
     user_token = get_user_token(username, "transactions:read")
     url = TINK_BASE_URL + "/data/v2/transactions"
@@ -128,7 +140,7 @@ def get_bank_connection_url(username):
         ),
         delegate=True,
         actor_client_id="df05e4b379934cd09963197cc855bfe9",
-        id_hint="hint"
+        id_hint="hint",
     )
     redirect_to = SELF_BASE_URL + "/bank/callback"
     encoded_redirect_to = urllib.parse.quote_plus(redirect_to)
@@ -143,15 +155,29 @@ def get_bank_connection_url(username):
 
     return bank_connection_url
 
-def register_transaction_webhook(username):
-    client_token = get_client_token("authorization:grant,user:create")
+
+def register_transaction_webhook(webhook_url=None):
+    client_token = get_client_token("webhook-endpoints")
     url = TINK_BASE_URL + "/events/v2/webhook-endpoints"
+    if not webhook_url:
+        webhook_url = SELF_BASE_URL + "/tink/webhook"
     headers = {
         "Authorization": "Bearer " + client_token,
         "Content-Type": "application/json",
     }
+    data = {
+        "description": "webhook",
+        "disabled": False,
+        "enabledEvents": ["account-transactions:modified"],
+        "url": webhook_url,
+    }
+    response = re.post(url=url, json=data, headers=headers)
+    logger.debug(f"Sent request {curl(response)}")
+    logger.debug(f"Got response {fmt_response(response)}")
+    return response.json()
+
 
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(get_user_transactions("test1"))
+    pprint(register_transaction_webhook("https://eo1646zh7a3dxpc.m.pipedream.net"))

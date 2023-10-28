@@ -2,7 +2,10 @@ import logging
 
 from flask import Flask, request, session
 
-from ecobud.connections.tink import get_bank_connection_url, get_user_transactions
+from ecobud.connections.tink import (
+    get_bank_connection_url,
+    get_user_transactions,
+)
 from ecobud.config import FLASK_SECRET_KEY
 
 from ecobud.model.user import (
@@ -22,6 +25,7 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 app.secret_key = FLASK_SECRET_KEY
+
 
 @app.route("/user", methods=["POST"])
 def user_post():
@@ -47,7 +51,7 @@ def login_post():
         return {"error": "User not found"}, 404
     except WrongPassword:
         return {"error": "Wrong password"}, 401
-    
+
     return {"username": username}, 200
 
 
@@ -58,6 +62,7 @@ def bank_post():
         return {"error": "Not logged in"}, 401
     bank_connection_url = get_bank_connection_url(username)
     return {"url": bank_connection_url}
+
 
 @app.route("/tink/transactions", methods=["GET"])
 def tranasctions_get():
@@ -72,6 +77,7 @@ def tranasctions_get():
 def webhook_post():
     print(request.json)
     return {"success": True}
+
 
 # @app.route("/bank/callback", methods=["GET"])
 # def bank_callback_get():

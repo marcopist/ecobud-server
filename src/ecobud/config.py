@@ -6,3 +6,4 @@ MONGO_CONNECTION_STRING = os.environ["MONGO_CONNECTION_STRING"]
 TINK_BASE_URL = "https://api.tink.com"
 SELF_BASE_URL = os.environ["SELF_BASE_URL"]
 FLASK_SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
+MONGO_DB_NAME = os.environ["MONGO_DB_NAME"]
