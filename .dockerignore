@@ -8,9 +8,6 @@ __pycache__/
 # Local development settings
 instance/
 
-# Environment variables
-.env
-
 # Logs
 logs/
 *.log

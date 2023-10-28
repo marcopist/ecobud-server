@@ -1,1 +1,1 @@
-gunicorn --workers=2 ecobud.app:app
+gunicorn --workers=2 src.ecobud.app:app

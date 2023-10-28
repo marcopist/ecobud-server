@@ -5,4 +5,4 @@ WORKDIR /app
 
 RUN pip install .
 
-ENTRYPOINT ["python", "-m", "app"]
+CMD source /app/startserver.sh
