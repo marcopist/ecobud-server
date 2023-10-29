@@ -15,6 +15,10 @@ from ecobud.model.user import (
     login_user,
 )
 
+from ecobud.model.transactions import (
+    get_transactions
+)
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -74,5 +78,13 @@ def tranasctions_get():
 
 @app.route("/tink/webhook", methods=["POST"])
 def webhook_post():
-    print(request.json)
+    logger.debug(f"Got webhook {request.json}")
     return {"success": True}
+
+@app.route("/transactions", methods=["GET"])
+def transactions_get():
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    transactions = get_transactions(username)
+    return {"transactions": transactions}, 200

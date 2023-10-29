@@ -154,12 +154,12 @@ def get_bank_connection_url(username):
         actor_client_id="df05e4b379934cd09963197cc855bfe9",
         id_hint="hint",
     )
-    redirect_to = SELF_BASE_URL + "/bank/callback"
-    encoded_redirect_to = urllib.parse.quote_plus(redirect_to)
+    redirect_to = "https://console.tink.com/callback"  # SELF_BASE_URL + "/bank/callback"
+
     bank_connection_url = (
         f"https://link.tink.com/1.0/transactions/connect-accounts"
         f"?client_id={TINK_CLIENT_ID}"
-        f"&redirect_uri={encoded_redirect_to}"
+        f"&redirect_uri={redirect_to}"
         f"&authorization_code={user_authorization_code}"
         "&market=GB"
         "&locale=en_US"

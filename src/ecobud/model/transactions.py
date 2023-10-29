@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 
 from ecobud.connections.mongo import collections
@@ -6,6 +6,7 @@ from ecobud.connections.tink import get_user_transactions
 
 transactionsdb = collections["transactions"]
 
+from pprint import pprint
 
 @dataclass
 class TransactionEcoData:
@@ -21,10 +22,10 @@ class TransactionEcoData:
         transactionAmount,
     ):
         return cls(
-            False,
-            transactionDate,
-            transactionDate,
-            transactionAmount,
+            oneOff=False,
+            startDate=transactionDate,
+            endDate=transactionDate,
+            dailyAmount=transactionAmount,
         )
 
 
@@ -48,10 +49,15 @@ class TransactionDescription:
         }
 
         """
+        descriptions = payload["descriptions"]
+        detailed = descriptions.get("detailed", {}).get("unstructured")
+        display = descriptions.get("display")
+        original = descriptions.get("original")
+
         return cls(
-            payload["detailed"]["unstructured"],
-            payload["display"],
-            payload["original"],
+            detailed=detailed,
+            display=display,
+            original=original,
         )
 
 
@@ -141,27 +147,24 @@ class Transaction:
         scale = payload["amount"]["value"]["scale"]
         amount = float(unscaledValue) / (10 ** int(scale))
         currency = payload["amount"]["currencyCode"]
-        valueDateTime = payload["valueDateTime"]
-        transactionDate = datetime.strptime(valueDateTime, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+        transactionDate = payload["dates"]["booked"]
+
         description = TransactionDescription.from_tink(
-            payload["descriptions"]['detailed']['unstructured'],
-            payload["descriptions"]['display'],
-            payload["descriptions"]['original'],
+            payload
         )
         ecoData = TransactionEcoData.set_default(
             transactionDate,
             amount,
         )
         return cls(
-            user,
-            id_,
-            amount,
-            currency,
-            transactionDate,
-            description,
-            ecoData,
+            user=user,
+            id=id_,
+            amount=amount,
+            currency=currency,
+            date=transactionDate,
+            description=description,
+            ecoData=ecoData,
         )
-
 
 
 def sync_transactions(username, noPages=1):
@@ -173,12 +176,17 @@ def sync_transactions(username, noPages=1):
         )
         transactionsdb.find_one_and_replace(
             {"id": transaction.id, "username": transaction.user},
-            transaction.to_dict(),
+            asdict(transaction),
             upsert=True,
         )
+
         cnt += 1
     return {"message": f"{cnt} transactions synced"}, 200
 
+def get_transactions(username):
+    transactions = list(transactionsdb.find({"user": username}).sort("date", -1).limit(100))
+    transnoid = [{k:v for k, v in t.items() if k != "_id"} for t in transactions]
+    return transnoid
 
 if __name__ == "__main__":
     print(sync_transactions("test0"))
