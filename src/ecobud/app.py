@@ -2,13 +2,11 @@ import logging
 
 from flask import Flask, request, session
 
+from ecobud.config import FLASK_SECRET_KEY
 from ecobud.connections.tink import (
     get_bank_connection_url,
     get_user_transactions,
 )
-
-from ecobud.config import FLASK_SECRET_KEY
-
 from ecobud.model.user import (
     UserAlreadyExists,
     UserNotFound,
