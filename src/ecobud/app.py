@@ -6,7 +6,6 @@ from ecobud.connections.tink import (
     get_bank_connection_url,
     get_user_transactions,
 )
-from ecobud.connections.mongo import test_connection
 
 from ecobud.config import FLASK_SECRET_KEY
 
@@ -81,6 +80,3 @@ def webhook_post():
     return {"success": True}
 
 
-@app.route("/test/mongodb", methods=["GET"])
-def test_mongodb():
-    return {"collections": test_connection()}
