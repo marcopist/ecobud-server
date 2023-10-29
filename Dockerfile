@@ -5,4 +5,4 @@ WORKDIR /app
 
 RUN pip install .
 
-CMD gunicorn --workers=2 --log-level 'error' src.ecobud.app:app
+CMD gunicorn --workers=2 src.ecobud.app:app

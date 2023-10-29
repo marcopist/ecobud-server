@@ -9,3 +9,6 @@ client = MongoClient(
 )
 
 collections = client[MONGO_DB_NAME]
+
+def test_connection():
+    return collections.list_collection_names()

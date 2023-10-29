@@ -6,6 +6,8 @@ from ecobud.connections.tink import (
     get_bank_connection_url,
     get_user_transactions,
 )
+from ecobud.connections.mongo import test_connection
+
 from ecobud.config import FLASK_SECRET_KEY
 
 from ecobud.model.user import (
@@ -79,10 +81,6 @@ def webhook_post():
     return {"success": True}
 
 
-# @app.route("/bank/callback", methods=["GET"])
-# def bank_callback_get():
-#     username = session.get("username")
-#     if not username:
-#         return {"error": "Not logged in"}, 401
-#     code = request.args.get("code")
-#     return {"success": True}
+@app.route("/test/mongodb", methods=["GET"])
+def test_mongodb():
+    return {"collections": test_connection()}
