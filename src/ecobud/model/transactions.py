@@ -8,21 +8,62 @@ transactionsdb = collections["transactions"]
 
 
 @dataclass
+class TransactionEcoData:
+    oneOff: bool
+    startDate: str
+    endDate: str
+    dailyAmount: float
+
+    @classmethod
+    def set_default(
+        cls,
+        transactionDate,
+        transactionAmount,
+    ):
+        return cls(
+            False,
+            transactionDate,
+            transactionDate,
+            transactionAmount,
+        )
+
+
+@dataclass
+class TransactionDescription:
+    detailed: str
+    display: str
+    original: str
+
+    @classmethod
+    def from_tink(cls, payload):
+        """Create a transaction description from a Tink payload
+            Example:
+
+        {
+          "detailed": {
+            "unstructured": "PAYMENT *SUBSCRIPTION 123/987"
+          },
+          "display": "Tesco",
+          "original": "TESCO STORES 3297"
+        }
+
+        """
+        return cls(
+            payload["detailed"]["unstructured"],
+            payload["display"],
+            payload["original"],
+        )
+
+
+@dataclass
 class Transaction:
     user: str
     id: str
     amount: float
     currency: str
-    category: str
     date: str
-    merchant: str
-    oneOff: bool
-    ecoStartDate: str
-    ecoEndDate: str
-    dailyEcoAmount: float
-
-    def to_dict(self):
-        return self.__dict__
+    description: TransactionDescription
+    ecoData: TransactionEcoData
 
     @classmethod
     def from_tink(cls, user, payload):
@@ -100,40 +141,39 @@ class Transaction:
         scale = payload["amount"]["value"]["scale"]
         amount = float(unscaledValue) / (10 ** int(scale))
         currency = payload["amount"]["currencyCode"]
-        category = payload["categories"]["pfm"]["name"]
-        date = datetime.strptime(
-            payload["valueDateTime"],
-            "%Y-%m-%dT%H:%M:%S.%fZ",
-        ).strftime("%Y-%m-%d")
-        merchant = payload["descriptions"]["display"]
-        oneOff = False
-        ecoStartDate = date
-        ecoEndDate = date
-        dailyEcoAmount = amount
-
+        valueDateTime = payload["valueDateTime"]
+        transactionDate = datetime.strptime(valueDateTime, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+        description = TransactionDescription.from_tink(
+            payload["descriptions"]['detailed']['unstructured'],
+            payload["descriptions"]['display'],
+            payload["descriptions"]['original'],
+        )
+        ecoData = TransactionEcoData.set_default(
+            transactionDate,
+            amount,
+        )
         return cls(
             user,
             id_,
             amount,
             currency,
-            category,
-            date,
-            merchant,
-            oneOff,
-            ecoStartDate,
-            ecoEndDate,
-            dailyEcoAmount,
+            transactionDate,
+            description,
+            ecoData,
         )
+
 
 
 def sync_transactions(username, noPages=1):
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
     for transaction_dict in transactions:
-        transaction = Transaction.from_tink(username, transaction_dict)
+        transaction = Transaction.from_tink(
+            username, transaction_dict
+        )
         transactionsdb.find_one_and_replace(
             {"id": transaction.id, "username": transaction.user},
-            transaction,
+            transaction.to_dict(),
             upsert=True,
         )
         cnt += 1
