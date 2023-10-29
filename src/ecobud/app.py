@@ -78,5 +78,3 @@ def tranasctions_get():
 def webhook_post():
     print(request.json)
     return {"success": True}
-
-

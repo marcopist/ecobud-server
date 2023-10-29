@@ -10,5 +10,13 @@ client = MongoClient(
 
 collections = client[MONGO_DB_NAME]
 
+
 def test_connection():
     return collections.list_collection_names()
+
+def get_size():
+    return collections.command("dbstats")['dataSize'] * 1e-6
+
+if __name__ == "__main__":
+    print("Collections are", test_connection())
+    print("Size total is: ", get_size(), "MB")

@@ -15,7 +15,6 @@ from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
@@ -115,15 +114,28 @@ def delete_user(username):
     return response.json()
 
 
-def get_user_transactions(username):
+def get_user_transactions(username, noPages=1):
     user_token = get_user_token(username, "transactions:read")
     url = TINK_BASE_URL + "/data/v2/transactions"
     headers = {"Authorization": "Bearer " + user_token}
-    response = re.get(url=url, headers=headers)
-    logger.debug(f"Sent request {curl(response)}")
-    logger.debug(f"Got response {fmt_response(response)}")
-    print(response.__dict__)
-    return response.json()
+
+    page = 0
+    transactions = []
+    next_page_token = None
+
+    while page < noPages:
+        page += 1
+        params = (
+            {"pageToken": next_page_token} if next_page_token else {}
+        )
+        response = re.get(url=url, headers=headers, params=params)
+        data = response.json()
+        logger.debug(f"Sent request {curl(response)}")
+        logger.debug(f"Got response {fmt_response(response)}")
+        transactions.extend(data["transactions"])
+        next_page_token = data["nextPageToken"]
+
+    return transactions
 
 
 def get_bank_connection_url(username):
@@ -147,7 +159,7 @@ def get_bank_connection_url(username):
     bank_connection_url = (
         f"https://link.tink.com/1.0/transactions/connect-accounts"
         f"?client_id={TINK_CLIENT_ID}"
-        f"&redirect_uri={redirect_to}"
+        f"&redirect_uri={encoded_redirect_to}"
         f"&authorization_code={user_authorization_code}"
         "&market=GB"
         "&locale=en_US"
@@ -175,13 +187,3 @@ def register_transaction_webhook(webhook_url=None):
     logger.debug(f"Sent request {curl(response)}")
     logger.debug(f"Got response {fmt_response(response)}")
     return response.json()
-
-
-if __name__ == "__main__":
-    from pprint import pprint
-
-    pprint(
-        register_transaction_webhook(
-            "https://eo1646zh7a3dxpc.m.pipedream.net"
-        )
-    )
