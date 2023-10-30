@@ -1,4 +1,5 @@
-from dataclasses import dataclass, asdict
+import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime
 
 from ecobud.connections.mongo import collections
@@ -7,6 +8,9 @@ from ecobud.connections.tink import get_user_transactions
 transactionsdb = collections["transactions"]
 
 from pprint import pprint
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class TransactionEcoData:
@@ -34,6 +38,7 @@ class TransactionDescription:
     detailed: str
     display: str
     original: str
+    user: str
 
     @classmethod
     def from_tink(cls, payload):
@@ -50,29 +55,34 @@ class TransactionDescription:
 
         """
         descriptions = payload["descriptions"]
-        detailed = descriptions.get("detailed", {}).get("unstructured")
+        detailed = descriptions.get("detailed", {}).get(
+            "unstructured"
+        )
         display = descriptions.get("display")
         original = descriptions.get("original")
+        user = display
 
         return cls(
             detailed=detailed,
             display=display,
             original=original,
+            user=user,
         )
 
 
 @dataclass
 class Transaction:
-    user: str
+    username: str
     id: str
     amount: float
     currency: str
     date: str
     description: TransactionDescription
     ecoData: TransactionEcoData
+    ignore: bool = False
 
     @classmethod
-    def from_tink(cls, user, payload):
+    def from_tink(cls, username, payload):
         """Create a transaction from a Tink payload
             Example:
 
@@ -149,15 +159,13 @@ class Transaction:
         currency = payload["amount"]["currencyCode"]
         transactionDate = payload["dates"]["booked"]
 
-        description = TransactionDescription.from_tink(
-            payload
-        )
+        description = TransactionDescription.from_tink(payload)
         ecoData = TransactionEcoData.set_default(
             transactionDate,
             amount,
         )
         return cls(
-            user=user,
+            username=username,
             id=id_,
             amount=amount,
             currency=currency,
@@ -175,7 +183,7 @@ def sync_transactions(username, noPages=1):
             username, transaction_dict
         )
         transactionsdb.find_one_and_replace(
-            {"id": transaction.id, "username": transaction.user},
+            {"id": transaction.id, "username": transaction.username},
             asdict(transaction),
             upsert=True,
         )
@@ -183,10 +191,47 @@ def sync_transactions(username, noPages=1):
         cnt += 1
     return {"message": f"{cnt} transactions synced"}, 200
 
+
 def get_transactions(username):
-    transactions = list(transactionsdb.find({"user": username}).sort("date", -1).limit(100))
-    transnoid = [{k:v for k, v in t.items() if k != "_id"} for t in transactions]
+    sync_transactions(username)
+    transactions = list(
+        transactionsdb.find({"username": username, "ignore": False})
+        .sort("date", -1)
+        .limit(100)
+    )
+    transnoid = [
+        {k: v for k, v in t.items() if k != "_id"}
+        for t in transactions
+    ]
     return transnoid
+
+
+def get_specific_transaction(username, transaction_id):
+    logger.debug(
+        f"Getting transaction {transaction_id} for {username}"
+    )
+    transaction = transactionsdb.find_one(
+        {"username": username, "id": transaction_id}
+    )
+    transaction = {k: v for k, v in transaction.items() if k != "_id"}
+    logging.debug(f"Got transaction {transaction}")
+    return transaction
+
+
+def update_transaction(transaction):
+    transactionsdb.find_one_and_replace(
+        {
+            "id": transaction["id"],
+            "username": transaction["username"],
+        },
+        transaction,
+        upsert=False,
+    )
+    logger.debug(
+        f"Finished mongo interaction for transaction {transaction['id']}"
+    )
+    return True
+
 
 if __name__ == "__main__":
     print(sync_transactions("test0"))

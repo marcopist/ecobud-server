@@ -13,7 +13,7 @@ dependencies = [
     "curlify",
     "bcrypt",
     "cachetools",
-    "gunicorn"
+    "gunicorn",
 ]
 
 [project.optional-dependencies]
