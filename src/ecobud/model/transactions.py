@@ -1,15 +1,22 @@
 import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime
+from multiprocessing import Process
+
+from dacite import from_dict
 
 from ecobud.connections.mongo import collections
 from ecobud.connections.tink import get_user_transactions
 
 transactionsdb = collections["transactions"]
 
-from pprint import pprint
-
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TinkTransactionData:
+    status: str
+    accountId: str
 
 
 @dataclass
@@ -79,6 +86,7 @@ class Transaction:
     date: str
     description: TransactionDescription
     ecoData: TransactionEcoData
+    tinkData: TinkTransactionData
     ignore: bool = False
 
     @classmethod
@@ -159,6 +167,11 @@ class Transaction:
         currency = payload["amount"]["currencyCode"]
         transactionDate = payload["dates"]["booked"]
 
+        tinkData = TinkTransactionData(
+            status=payload["status"],
+            accountId=payload["accountId"],
+        )
+
         description = TransactionDescription.from_tink(payload)
         ecoData = TransactionEcoData.set_default(
             transactionDate,
@@ -172,28 +185,46 @@ class Transaction:
             date=transactionDate,
             description=description,
             ecoData=ecoData,
+            tinkData=tinkData,
         )
+    
+    @classmethod
+    def from_dict(cls, payload):
+        return from_dict(data_class=cls, data=payload)
+        
 
 
 def sync_transactions(username, noPages=1):
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
     for transaction_dict in transactions:
-        transaction = Transaction.from_tink(
+        tinkTransaction = Transaction.from_tink(
             username, transaction_dict
         )
-        transactionsdb.find_one_and_replace(
-            {"id": transaction.id, "username": transaction.username},
-            asdict(transaction),
-            upsert=True,
+        existing = transactionsdb.find_one(
+            {"id": tinkTransaction.id, "username": tinkTransaction.username},
         )
 
+        if existing:
+            existingTransaction = Transaction.from_dict(existing)
+            existingTransaction.tinkData = tinkTransaction.tinkData
+            
+
+        else:
+            transactionsdb.insert_one(asdict(tinkTransaction))
+            
         cnt += 1
     return {"message": f"{cnt} transactions synced"}, 200
 
 
 def get_transactions(username):
-    sync_transactions(username)
+    async_process = Process(
+        target=sync_transactions,
+        args=(username,),
+        daemon=True,
+    )
+    async_process.start()
+
     transactions = list(
         transactionsdb.find({"username": username, "ignore": False})
         .sort("date", -1)
