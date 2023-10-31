@@ -194,7 +194,6 @@ def sync_transactions(username: str, noPages:int =1) -> Dict[str, Any]:
             existingTransaction = Transaction.from_dict(existing)
             existingTransaction.tinkData = tinkTransaction.tinkData
 
-
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))
             
