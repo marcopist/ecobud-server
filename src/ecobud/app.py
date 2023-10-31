@@ -23,7 +23,7 @@ from ecobud.model.analytics import (
     get_transactions_effective_on_date,
     get_transactions_effective_between_dates,
     get_total_cost,
-    get_total_cost_of_transactions_effective_between_dates
+    get_total_cost_of_transactions_effective_between_dates,
 )
 
 logging.basicConfig(
@@ -138,32 +138,62 @@ def transaction_put(transaction_id):
     logger.debug(f"[Success] Updated transaction {transaction_id}")
     return {"success": True}, 200
 
-@app.route("/analytics/transactions/<start_date>/<end_date>", methods=["GET"])
+
+@app.route(
+    "/analytics/transactions/<start_date>/<end_date>", methods=["GET"],
+)
 def analytics_transactions_get(start_date, end_date):
+    logger.debug(
+        f"Getting analytics transactions for {session.get('username')},"
+        f"start_date: {start_date}, end_date: {end_date}"
+    )
     username = session.get("username")
     if not username:
         return {"error": "Not logged in"}, 401
-    transactions = get_transactions_effective_between_dates(start_date, end_date, username)
+    transactions = list(
+        get_transactions_effective_between_dates(
+            start_date, end_date, username
+        )
+    )
     return {"transactions": transactions}, 200
+
 
 @app.route("/analytics/transactions/<date>", methods=["GET"])
 def analytics_transactions_get_date(date):
+    logger.debug(
+        f"Getting single date analytics transactions for {session.get('username')},"
+        f"date: {date}"
+    )
     username = session.get("username")
     if not username:
         return {"error": "Not logged in"}, 401
-    transactions = get_transactions_effective_on_date(date, username)
+    transactions = list(
+        get_transactions_effective_on_date(date, username)
+    )
     return {"transactions": transactions}, 200
+
 
 @app.route("/analytics/cost/<start_date>/<end_date>", methods=["GET"])
 def analytics_cost_get(start_date, end_date):
+    logger.debug(
+        f"Getting analytics cost for {session.get('username')},"
+        f"start_date: {start_date}, end_date: {end_date}"
+    )
     username = session.get("username")
     if not username:
         return {"error": "Not logged in"}, 401
-    cost = get_total_cost_of_transactions_effective_between_dates(start_date, end_date, username)
+    cost = get_total_cost_of_transactions_effective_between_dates(
+        start_date, end_date, username
+    )
     return {"cost": cost}, 200
+
 
 @app.route("/analytics/cost/<date>", methods=["GET"])
 def analytics_cost_get_date(date):
+    logger.debug(
+        f"Getting single date analytics cost for {session.get('username')},"
+        f"date: {date}"
+    )
     username = session.get("username")
     if not username:
         return {"error": "Not logged in"}, 401

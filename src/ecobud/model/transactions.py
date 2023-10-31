@@ -13,7 +13,6 @@ transactionsdb = collections["transactions"]
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class TinkTransactionData:
     status: str
