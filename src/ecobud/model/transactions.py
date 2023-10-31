@@ -179,6 +179,26 @@ class Transaction:
     def from_dict(cls, payload: Dict[str, Any]) -> "Transaction":
         return from_dict(data_class=cls, data=payload)
 
+    def daily_cost(self) -> float:
+        if self.ecoData.oneOff:
+            return self.amount
+        else:
+            return self.amount / self.days_in_period()
+        
+    def days_in_period(self) -> float:
+        start = datetime.fromisoformat(self.ecoData.startDate)
+        end = datetime.fromisoformat(self.ecoData.endDate)
+        return (end - start).days + 1
+    
+    def get_cost_in_period(self, start: datetime, end: datetime) -> float:
+        if self.ecoData.oneOff:
+            if self.date >= start and self.date <= end:
+                return self.amount
+            else:
+                return 0
+        else:
+            days_overlap = (min(end, datetime.fromisoformat(self.ecoData.endDate)) - max(start, datetime.fromisoformat(self.ecoData.startDate))).days + 1
+            return self.amount * days_overlap / self.days_in_period()
 
 def sync_transactions(
     username: str, noPages: int = 1
