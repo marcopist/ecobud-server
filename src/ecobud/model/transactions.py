@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, Dict, Any, Tuple
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from multiprocessing import Process
@@ -33,7 +34,7 @@ class TransactionEcoData:
         transactionAmount,
     ):
         return cls(
-            oneOff=False,
+            oneOff=True,
             startDate=transactionDate,
             endDate=transactionDate,
             dailyAmount=transactionAmount,
@@ -42,10 +43,10 @@ class TransactionEcoData:
 
 @dataclass
 class TransactionDescription:
-    detailed: str
-    display: str
-    original: str
-    user: str
+    detailed: Optional[str]
+    display: Optional[str]
+    original: Optional[str]
+    user: Optional[str]
 
     @classmethod
     def from_tink(cls, payload):
@@ -90,7 +91,7 @@ class Transaction:
     ignore: bool = False
 
     @classmethod
-    def from_tink(cls, username, payload):
+    def from_tink(cls, username: str, payload: Dict[str, Any]) -> "Transaction":
         """Create a transaction from a Tink payload
             Example:
 
@@ -189,12 +190,12 @@ class Transaction:
         )
     
     @classmethod
-    def from_dict(cls, payload):
+    def from_dict(cls, payload: Dict[str, Any]) -> "Transaction":
         return from_dict(data_class=cls, data=payload)
         
 
 
-def sync_transactions(username, noPages=1):
+def sync_transactions(username: str, noPages:int =1) -> Dict[str, Any]:
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
     for transaction_dict in transactions:
@@ -208,16 +209,16 @@ def sync_transactions(username, noPages=1):
         if existing:
             existingTransaction = Transaction.from_dict(existing)
             existingTransaction.tinkData = tinkTransaction.tinkData
-            
+
 
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))
             
         cnt += 1
-    return {"message": f"{cnt} transactions synced"}, 200
+    return {"message": f"{cnt} transactions synced"}
 
 
-def get_transactions(username):
+def get_transactions(username: str) -> Dict[str, Any]:
     async_process = Process(
         target=sync_transactions,
         args=(username,),
@@ -237,7 +238,7 @@ def get_transactions(username):
     return transnoid
 
 
-def get_specific_transaction(username, transaction_id):
+def get_specific_transaction(username: str, transaction_id: str) -> Dict[str, Any]:
     logger.debug(
         f"Getting transaction {transaction_id} for {username}"
     )
@@ -249,7 +250,7 @@ def get_specific_transaction(username, transaction_id):
     return transaction
 
 
-def update_transaction(transaction):
+def update_transaction(transaction: Dict[str, Any]) -> bool:
     transactionsdb.find_one_and_replace(
         {
             "id": transaction["id"],
