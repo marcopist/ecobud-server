@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, Dict, Any, Tuple
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from multiprocessing import Process
+from typing import Any, Dict, Optional, Tuple
 
 from dacite import from_dict
 
@@ -77,7 +77,9 @@ class Transaction:
     ignore: bool = False
 
     @classmethod
-    def from_tink(cls, username: str, payload: Dict[str, Any]) -> "Transaction":
+    def from_tink(
+        cls, username: str, payload: Dict[str, Any]
+    ) -> "Transaction":
         """Create a transaction from a Tink payload
             Example:
 
@@ -172,14 +174,15 @@ class Transaction:
             ecoData=ecoData,
             tinkData=tinkData,
         )
-    
+
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "Transaction":
         return from_dict(data_class=cls, data=payload)
-        
 
 
-def sync_transactions(username: str, noPages:int =1) -> Dict[str, Any]:
+def sync_transactions(
+    username: str, noPages: int = 1
+) -> Dict[str, Any]:
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
     for transaction_dict in transactions:
@@ -187,7 +190,10 @@ def sync_transactions(username: str, noPages:int =1) -> Dict[str, Any]:
             username, transaction_dict
         )
         existing = transactionsdb.find_one(
-            {"id": tinkTransaction.id, "username": tinkTransaction.username},
+            {
+                "id": tinkTransaction.id,
+                "username": tinkTransaction.username,
+            },
         )
 
         if existing:
@@ -196,7 +202,7 @@ def sync_transactions(username: str, noPages:int =1) -> Dict[str, Any]:
 
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))
-            
+
         cnt += 1
     return {"message": f"{cnt} transactions synced"}
 
@@ -221,7 +227,9 @@ def get_transactions(username: str) -> Dict[str, Any]:
     return transnoid
 
 
-def get_specific_transaction(username: str, transaction_id: str) -> Dict[str, Any]:
+def get_specific_transaction(
+    username: str, transaction_id: str
+) -> Dict[str, Any]:
     logger.debug(
         f"Getting transaction {transaction_id} for {username}"
     )
