@@ -22,23 +22,9 @@ class TinkTransactionData:
 
 @dataclass
 class TransactionEcoData:
-    oneOff: bool
-    startDate: str
-    endDate: str
-    dailyAmount: float
-
-    @classmethod
-    def set_default(
-        cls,
-        transactionDate,
-        transactionAmount,
-    ):
-        return cls(
-            oneOff=True,
-            startDate=transactionDate,
-            endDate=transactionDate,
-            dailyAmount=transactionAmount,
-        )
+    oneOff: bool = True
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
 
 
 @dataclass
@@ -174,10 +160,8 @@ class Transaction:
         )
 
         description = TransactionDescription.from_tink(payload)
-        ecoData = TransactionEcoData.set_default(
-            transactionDate,
-            amount,
-        )
+        ecoData = TransactionEcoData()
+
         return cls(
             username=username,
             id=id_,
