@@ -19,6 +19,12 @@ from ecobud.model.user import (
     create_user,
     login_user,
 )
+from ecobud.model.analytics import (
+    get_transactions_effective_on_date,
+    get_transactions_effective_between_dates,
+    get_total_cost,
+    get_total_cost_of_transactions_effective_between_dates
+)
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -131,6 +137,38 @@ def transaction_put(transaction_id):
     update_transaction(transaction)
     logger.debug(f"[Success] Updated transaction {transaction_id}")
     return {"success": True}, 200
+
+@app.route("/analytics/transactions/<start_date>/<end_date>", methods=["GET"])
+def analytics_transactions_get(start_date, end_date):
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    transactions = get_transactions_effective_between_dates(start_date, end_date, username)
+    return {"transactions": transactions}, 200
+
+@app.route("/analytics/transactions/<date>", methods=["GET"])
+def analytics_transactions_get_date(date):
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    transactions = get_transactions_effective_on_date(date, username)
+    return {"transactions": transactions}, 200
+
+@app.route("/analytics/cost/<start_date>/<end_date>", methods=["GET"])
+def analytics_cost_get(start_date, end_date):
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    cost = get_total_cost_of_transactions_effective_between_dates(start_date, end_date, username)
+    return {"cost": cost}, 200
+
+@app.route("/analytics/cost/<date>", methods=["GET"])
+def analytics_cost_get_date(date):
+    username = session.get("username")
+    if not username:
+        return {"error": "Not logged in"}, 401
+    cost = get_total_cost(date, username)
+    return {"cost": cost}, 200
 
 
 @app.route("/logout", methods=["POST"])

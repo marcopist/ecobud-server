@@ -1,7 +1,7 @@
 from ecobud.connections.mongo import collections
 import logging
 from typing import Iterable, Optional
-import datetime
+from datetime import datetime
 
 from ecobud.model.transactions import (
     transactionsdb,
@@ -88,4 +88,12 @@ def get_total_cost(transactions: Iterable[Transaction]) -> float:
     """Get total cost of transactions"""
     return sum(
         transaction.daily_cost() for transaction in transactions
+    )
+
+
+if __name__ == "__main__":
+    print(
+        get_total_cost_of_transactions_effective_between_dates(
+            "2023-10-27", "2023-10-27", "test0"
+        )
     )
