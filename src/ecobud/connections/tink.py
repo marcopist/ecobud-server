@@ -5,12 +5,7 @@ import urllib.parse
 import cachetools.func
 import requests as re
 
-from ecobud.config import (
-    SELF_BASE_URL,
-    TINK_BASE_URL,
-    TINK_CLIENT_ID,
-    TINK_CLIENT_SECRET,
-)
+from ecobud.config import SELF_BASE_URL, TINK_BASE_URL, TINK_CLIENT_ID, TINK_CLIENT_SECRET
 from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)
@@ -33,9 +28,7 @@ def get_client_token(scope, grant_type="client_credentials"):
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_user_authorization_code(
-    username, scope, delegate=False, **kwargs
-):
+def get_user_authorization_code(username, scope, delegate=False, **kwargs):
     client_token = get_client_token(
         scope="authorization:grant",
         grant_type="client_credentials",
@@ -61,9 +54,7 @@ def get_user_authorization_code(
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
 def get_user_token(username, scope):
-    user_authorization_code = get_user_authorization_code(
-        username, scope
-    )
+    user_authorization_code = get_user_authorization_code(username, scope)
     url = TINK_BASE_URL + "/api/v1/oauth/token"
     data = {
         "client_id": TINK_CLIENT_ID,
@@ -125,9 +116,7 @@ def get_user_transactions(username, noPages=1):
 
     while page < noPages:
         page += 1
-        params = (
-            {"pageToken": next_page_token} if next_page_token else {}
-        )
+        params = {"pageToken": next_page_token} if next_page_token else {}
         response = re.get(url=url, headers=headers, params=params)
         data = response.json()
         logger.debug(f"Sent request {curl(response)}")

@@ -24,5 +24,5 @@ dev = ["black", "pytest", "isort"]
 requires = ["setuptools"]
 
 [tool.black]
-line-length = 70
+line-length = 120
 target-version = ["py37"]

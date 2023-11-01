@@ -49,9 +49,7 @@ class TransactionDescription:
 
         """
         descriptions = payload["descriptions"]
-        detailed = descriptions.get("detailed", {}).get(
-            "unstructured"
-        )
+        detailed = descriptions.get("detailed", {}).get("unstructured")
         display = descriptions.get("display")
         original = descriptions.get("original")
         user = display
@@ -122,9 +120,7 @@ def sync_transactions(
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
     for transaction_dict in transactions:
-        tinkTransaction = Transaction.from_tink(
-            username, transaction_dict
-        )
+        tinkTransaction = Transaction.from_tink(username, transaction_dict)
         existing = transactionsdb.find_one(
             {
                 "id": tinkTransaction.id,
@@ -159,27 +155,14 @@ def get_transactions(username: str) -> Dict[str, Any]:
     )
     async_process.start()
 
-    transactions = list(
-        transactionsdb.find({"username": username, "ignore": False})
-        .sort("date", -1)
-        .limit(100)
-    )
-    transnoid = [
-        {k: v for k, v in t.items() if k != "_id"}
-        for t in transactions
-    ]
+    transactions = list(transactionsdb.find({"username": username, "ignore": False}).sort("date", -1).limit(100))
+    transnoid = [{k: v for k, v in t.items() if k != "_id"} for t in transactions]
     return transnoid
 
 
-def get_specific_transaction(
-    username: str, transaction_id: str
-) -> Dict[str, Any]:
-    logger.debug(
-        f"Getting transaction {transaction_id} for {username}"
-    )
-    transaction = transactionsdb.find_one(
-        {"username": username, "id": transaction_id}
-    )
+def get_specific_transaction(username: str, transaction_id: str) -> Dict[str, Any]:
+    logger.debug(f"Getting transaction {transaction_id} for {username}")
+    transaction = transactionsdb.find_one({"username": username, "id": transaction_id})
     transaction = {k: v for k, v in transaction.items() if k != "_id"}
     logging.debug(f"Got transaction {transaction}")
     return transaction
@@ -194,9 +177,7 @@ def update_transaction(transaction: Dict[str, Any]) -> bool:
         transaction,
         upsert=False,
     )
-    logger.debug(
-        f"Finished mongo interaction for transaction {transaction['id']}"
-    )
+    logger.debug(f"Finished mongo interaction for transaction {transaction['id']}")
     return True
 
 

@@ -68,9 +68,7 @@ def login_user(username, password):
     user = _get_user(username)
 
     encrypted_password = user["password"].encode("utf-8")
-    if not bcrypt.checkpw(
-        password.encode("utf-8"), encrypted_password
-    ):
+    if not bcrypt.checkpw(password.encode("utf-8"), encrypted_password):
         logger.debug(f"Wrong password for user {username}")
         raise WrongPassword(f"Wrong password for user {username}")
 
@@ -84,6 +82,4 @@ def _get_user(username):
 
 
 if __name__ == "__main__":
-    print(
-        create_user("test0", email="test0@test.com", password="test0")
-    )
+    print(create_user("test0", email="test0@test.com", password="test0"))

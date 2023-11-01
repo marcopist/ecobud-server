@@ -3,23 +3,10 @@ import logging
 from flask import Flask, request, session
 
 from ecobud.config import FLASK_SECRET_KEY
-from ecobud.connections.tink import (
-    get_bank_connection_url,
-    get_user_transactions,
-)
+from ecobud.connections.tink import get_bank_connection_url, get_user_transactions
 from ecobud.model.analytics import get_analytics
-from ecobud.model.transactions import (
-    get_specific_transaction,
-    get_transactions,
-    update_transaction,
-)
-from ecobud.model.user import (
-    UserAlreadyExists,
-    UserNotFound,
-    WrongPassword,
-    create_user,
-    login_user,
-)
+from ecobud.model.transactions import get_specific_transaction, get_transactions, update_transaction
+from ecobud.model.user import UserAlreadyExists, UserNotFound, WrongPassword, create_user, login_user
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -86,16 +73,12 @@ def webhook_post():
 
 @app.route("/transactions", methods=["GET"])
 def transactions_get():
-    logger.debug(
-        f"Getting transactions for {session.get('username')}"
-    )
+    logger.debug(f"Getting transactions for {session.get('username')}")
     username = session.get("username")
     if not username:
         return {"error": "Not logged in"}, 401
     transactions = get_transactions(username)
-    logger.debug(
-        f"Got transactions for {session.get('username')}, number is {len(transactions)}"
-    )
+    logger.debug(f"Got transactions for {session.get('username')}, number is {len(transactions)}")
     return {"transactions": transactions}, 200
 
 
@@ -110,13 +93,9 @@ def transaction_get(transaction_id):
 
 @app.route("/transactions/<transaction_id>", methods=["PUT"])
 def transaction_put(transaction_id):
-    logger.debug(
-        f"Got update request for transaction {transaction_id}"
-    )
+    logger.debug(f"Got update request for transaction {transaction_id}")
     transaction = request.json["transaction"]
-    logger.debug(
-        f"Updating transaction {transaction_id} with {transaction}"
-    )
+    logger.debug(f"Updating transaction {transaction_id} with {transaction}")
     username = session.get("username")
     if not username:
         logger.debug(f"Not logged in")
@@ -134,15 +113,10 @@ def transaction_put(transaction_id):
     return {"success": True}, 200
 
 
-@app.route(
-    "/analytics/<start_date>/<end_date>",
-    methods=["GET"],
-)
+@app.route("/analytics/<start_date>/<end_date>", methods=["GET"])
 def analytics_get(start_date, end_date):
     username = session.get("username")
-    logger.debug(
-        f"Got request for analytics for user {username} between {start_date} and {end_date}"
-    )
+    logger.debug(f"Got request for analytics for user {username} between {start_date} and {end_date}")
     if not username:
         return {"error": "Not logged in"}, 401
 

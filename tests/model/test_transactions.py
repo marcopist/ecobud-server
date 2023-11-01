@@ -52,9 +52,7 @@ example_transaction = Transaction(
     amount=1.0,
     currency="USD",
     date="2020-12-15",
-    description=TransactionDescription(
-        detailed="test", display="test", original="test", user="test"
-    ),
+    description=TransactionDescription(detailed="test", display="test", original="test", user="test"),
     ecoData=TransactionEcoData(oneOff=True),
     tinkData=TinkTransactionData(
         status="BOOKED",
@@ -65,9 +63,7 @@ example_transaction = Transaction(
 
 class TestTransaction(unittest.TestCase):
     def test_from_tink(self):
-        transaction = Transaction.from_tink(
-            "test", example_tink_payload
-        )
+        transaction = Transaction.from_tink("test", example_tink_payload)
         assert transaction == example_transaction
 
     def test_from_dict(self):
@@ -78,9 +74,7 @@ class TestTransaction(unittest.TestCase):
 @patch("ecobud.model.transactions.Process")
 @patch("ecobud.model.transactions.sync_transactions")
 @patch("ecobud.model.transactions.transactionsdb")
-def test_get_transactions(
-    mock_transactionsdb, mock_sync_transactions, mock_process
-):
+def test_get_transactions(mock_transactionsdb, mock_sync_transactions, mock_process):
     mock_transactionsdb.find.return_value.sort.return_value.limit.return_value = [
         {"username": "test", "id": "1"},
         {"username": "test", "id": "2"},
@@ -118,15 +112,11 @@ def test_update_transaction(mock_transactionsdb):
     )
     assert resp == True
     assert mock_transactionsdb.find_one_and_replace.called == True
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][
-        0
-    ] == {
+    assert mock_transactionsdb.find_one_and_replace.call_args[0][0] == {
         "id": "1",
         "username": "test",
     }
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][
-        1
-    ] == {
+    assert mock_transactionsdb.find_one_and_replace.call_args[0][1] == {
         "username": "test",
         "id": "1",
         "amount": 1.0,

@@ -1,13 +1,9 @@
 import logging
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Iterable, Optional
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple
 
-from ecobud.model.transactions import (
-    Transaction,
-    transactionsdb,
-)
+from ecobud.model.transactions import Transaction, transactionsdb
 
 logger = logging.getLogger(__name__)
 
@@ -44,36 +40,22 @@ class AnalysedTransaction:
 
     def __post_init__(self):
         self.outputData = TransactionAnalyticsOutputData()
-        self.outputData.periodCost = (
-            self.get_cost_in_analytics_period()
-        )
+        self.outputData.periodCost = self.get_cost_in_analytics_period()
 
     def days_in_period(self) -> float:
-        start = datetime.fromisoformat(
-            self.transaction.ecoData.startDate
-        )
+        start = datetime.fromisoformat(self.transaction.ecoData.startDate)
         end = datetime.fromisoformat(self.transaction.ecoData.endDate)
         return (end - start).days + 1
 
     def get_cost_in_analytics_period(
         self,
     ) -> float:
-        analyticsStartDate = datetime.fromisoformat(
-            self.inputData.startDate
-        )
-        analyticsEndDate = datetime.fromisoformat(
-            self.inputData.endDate
-        )
-        datetimeTransactionDate = datetime.fromisoformat(
-            self.transaction.date
-        )
+        analyticsStartDate = datetime.fromisoformat(self.inputData.startDate)
+        analyticsEndDate = datetime.fromisoformat(self.inputData.endDate)
+        datetimeTransactionDate = datetime.fromisoformat(self.transaction.date)
 
         if self.transaction.ecoData.oneOff:
-            if (
-                analyticsStartDate
-                <= datetimeTransactionDate
-                <= analyticsEndDate
-            ):
+            if analyticsStartDate <= datetimeTransactionDate <= analyticsEndDate:
                 return self.transaction.amount
             else:
                 return 0
@@ -91,11 +73,7 @@ class AnalysedTransaction:
                 )
                 + 1
             )
-            return (
-                self.transaction.amount
-                * overlappingDays
-                / self.days_in_period()
-            )
+            return self.transaction.amount * overlappingDays / self.days_in_period()
 
 
 @dataclass
@@ -105,9 +83,7 @@ class Analytics:
 
     def __post_init__(self):
         self.outputData = AnalyticsOutputData()
-        self.outputData.transactions = list(
-            self.get_transactions_in_period()
-        )
+        self.outputData.transactions = list(self.get_transactions_in_period())
         self.outputData.periodCost = self.get_cost_in_period()
 
     def get_transactions_in_period(self) -> Iterable[Transaction]:
@@ -128,12 +104,8 @@ class Analytics:
                         },
                         {
                             "ecoData.oneOff": False,
-                            "ecoData.startDate": {
-                                "$lte": self.inputData.endDate
-                            },
-                            "ecoData.endDate": {
-                                "$gte": self.inputData.startDate
-                            },
+                            "ecoData.startDate": {"$lte": self.inputData.endDate},
+                            "ecoData.endDate": {"$gte": self.inputData.startDate},
                         },
                     ]
                 },
@@ -143,18 +115,13 @@ class Analytics:
         result = list(transactionsdb.find(query))
 
         return map(
-            lambda trans: AnalysedTransaction(
-                Transaction.from_dict(trans), self.inputData
-            ),
+            lambda trans: AnalysedTransaction(Transaction.from_dict(trans), self.inputData),
             result,
         )
 
     def get_cost_in_period(self) -> float:
         """Get total cost of transactions"""
-        return sum(
-            transaction.outputData.periodCost
-            for transaction in self.outputData.transactions
-        )
+        return sum(transaction.outputData.periodCost for transaction in self.outputData.transactions)
 
 
 def get_analytics(startDate, endDate, username):
