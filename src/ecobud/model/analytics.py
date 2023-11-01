@@ -1,9 +1,13 @@
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Iterable, Optional
+from typing import Any, Dict, Optional, Tuple
 
-from ecobud.model.transactions import Transaction, transactionsdb
+from ecobud.model.transactions import (
+    Transaction,
+    transactionsdb,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +34,25 @@ class TransactionAnalyticsOutputData:
     periodCost: Optional[float] = None
 
 
-class AnalysedTransaction(Transaction):
+@dataclass
+class AnalysedTransaction:
     """A transaction with additional analytics data"""
 
-    def __init__(
-        self, transaction: Transaction, input_data: AnalyticsInputData
-    ):
-        super().__init__(**transaction.__dict__)
-        self.inputData = input_data
+    transaction: Transaction
+    inputData: AnalyticsInputData
+    outputData: Optional[TransactionAnalyticsOutputData] = None
+
+    def __post_init__(self):
         self.outputData = TransactionAnalyticsOutputData()
         self.outputData.periodCost = (
             self.get_cost_in_analytics_period()
         )
 
     def days_in_period(self) -> float:
-        start = datetime.fromisoformat(self.ecoData.startDate)
-        end = datetime.fromisoformat(self.ecoData.endDate)
+        start = datetime.fromisoformat(
+            self.transaction.ecoData.startDate
+        )
+        end = datetime.fromisoformat(self.transaction.ecoData.endDate)
         return (end - start).days + 1
 
     def get_cost_in_analytics_period(
@@ -57,15 +64,17 @@ class AnalysedTransaction(Transaction):
         analyticsEndDate = datetime.fromisoformat(
             self.inputData.endDate
         )
-        datetimeTransactionDate = datetime.fromisoformat(self.date)
+        datetimeTransactionDate = datetime.fromisoformat(
+            self.transaction.date
+        )
 
-        if self.ecoData.oneOff:
+        if self.transaction.ecoData.oneOff:
             if (
                 analyticsStartDate
                 <= datetimeTransactionDate
                 <= analyticsEndDate
             ):
-                return self.amount
+                return self.transaction.amount
             else:
                 return 0
         else:
@@ -83,18 +92,22 @@ class AnalysedTransaction(Transaction):
                 + 1
             )
             return (
-                self.amount * overlappingDays / self.days_in_period()
+                self.transaction.amount
+                * overlappingDays
+                / self.days_in_period()
             )
 
 
+@dataclass
 class Analytics:
-    def __init__(self, inputData: AnalyticsInputData):
-        self.inputData = inputData
+    inputData: AnalyticsInputData
+    outputData: Optional[AnalyticsOutputData] = None
+
+    def __post_init__(self):
         self.outputData = AnalyticsOutputData()
-        self.outputData.transactions = (
+        self.outputData.transactions = list(
             self.get_transactions_in_period()
         )
-
         self.outputData.periodCost = self.get_cost_in_period()
 
     def get_transactions_in_period(self) -> Iterable[Transaction]:
@@ -127,8 +140,13 @@ class Analytics:
             ]
         }
 
+        result = list(transactionsdb.find(query))
+
         return map(
-            AnalysedTransaction.from_dict, transactionsdb.find(query)
+            lambda trans: AnalysedTransaction(
+                Transaction.from_dict(trans), self.inputData
+            ),
+            result,
         )
 
     def get_cost_in_period(self) -> float:
@@ -139,11 +157,26 @@ class Analytics:
         )
 
 
-if __name__ == "__main__":
+def get_analytics(startDate, endDate, username):
+    logger.debug(
+        "The get_analytics function was called with: startDate: {}, endDate: {}, username: {}".format(
+            startDate, endDate, username
+        )
+    )
     inputData = AnalyticsInputData(
-        username="test0",
-        startDate="2023-10-01",
-        endDate="2023-10-31",
+        username=username,
+        startDate=startDate,
+        endDate=endDate,
     )
     analytics = Analytics(inputData)
-    print(list(analytics.outputData.transactions))
+    return asdict(analytics.outputData)
+
+
+if __name__ == "__main__":
+    print(
+        get_analytics(
+            "2023-10-02",
+            "2023-10-31",
+            "test0",
+        )
+    )

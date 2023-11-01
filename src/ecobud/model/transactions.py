@@ -112,13 +112,7 @@ class Transaction:
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "Transaction":
-        return from_dict(data_class=cls, data=payload)
-
-    def daily_cost(self) -> float:
-        if self.ecoData.oneOff:
-            return self.amount
-        else:
-            return self.amount / self.days_in_period()
+        return from_dict(data_class=Transaction, data=payload)
 
 
 def sync_transactions(
