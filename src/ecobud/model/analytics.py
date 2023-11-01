@@ -1,99 +1,149 @@
-from ecobud.connections.mongo import collections
 import logging
-from typing import Iterable, Optional
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Iterable, Optional
 
-from ecobud.model.transactions import (
-    transactionsdb,
-    Transaction,
-)
-
+from ecobud.model.transactions import Transaction, transactionsdb
 
 logger = logging.getLogger(__name__)
 
 
-def get_transactions_effective_on_date(
-    date: str, username: str
-) -> Iterable[Transaction]:
-    """Get all transactions effective on a given date"""
-    query = {
-        "$and": [
-            {
-                "username": username,
-            },
-            {
-                "$or": [
-                    {"ecoData.oneOff": True, "date": date},
-                    {
-                        "ecoData.oneOff": False,
-                        "ecoData.startDate": {"$lte": date},
-                        "ecoData.endDate": {"$gte": date},
-                    },
-                ]
-            },
-        ]
-    }
+@dataclass
+class AnalyticsInputData:
+    """Data used as input for analytics"""
 
-    return map(Transaction.from_dict, transactionsdb.find(query))
+    username: str
+    startDate: str
+    endDate: str
 
 
-def get_transactions_effective_between_dates(
-    start_date: str, end_date: str, username: str
-) -> Iterable[Transaction]:
-    """Get all transactions effective between two dates"""
-    query = {
-        "$and": [
-            {
-                "username": username,
-            },
-            {
-                "$or": [
-                    {
-                        "ecoData.oneOff": True,
-                        "date": {
-                            "$gte": start_date,
-                            "$lte": end_date,
-                        },
-                    },
-                    {
-                        "ecoData.oneOff": False,
-                        "ecoData.startDate": {"$lte": end_date},
-                        "ecoData.endDate": {"$gte": start_date},
-                    },
-                ]
-            },
-        ]
-    }
-
-    return map(Transaction.from_dict, transactionsdb.find(query))
+@dataclass
+class AnalyticsOutputData:
+    transactions: Optional[Iterable[Transaction]] = None
+    periodCost: Optional[float] = None
 
 
-def get_total_cost_of_transactions_effective_between_dates(
-    start_date: str, end_date: str, username: str
-) -> float:
-    transactions = get_transactions_effective_between_dates(
-        start_date, end_date, username
-    )
+@dataclass
+class TransactionAnalyticsOutputData:
+    """Data used as output for analytics"""
 
-    return sum(
-        transaction.get_cost_in_period(
-            datetime.fromisoformat(start_date),
-            datetime.fromisoformat(end_date),
+    periodCost: Optional[float] = None
+
+
+class AnalysedTransaction(Transaction):
+    """A transaction with additional analytics data"""
+
+    def __init__(
+        self, transaction: Transaction, input_data: AnalyticsInputData
+    ):
+        super().__init__(**transaction.__dict__)
+        self.inputData = input_data
+        self.outputData = TransactionAnalyticsOutputData()
+        self.outputData.periodCost = (
+            self.get_cost_in_analytics_period()
         )
-        for transaction in transactions
-    )
+
+    def days_in_period(self) -> float:
+        start = datetime.fromisoformat(self.ecoData.startDate)
+        end = datetime.fromisoformat(self.ecoData.endDate)
+        return (end - start).days + 1
+
+    def get_cost_in_analytics_period(
+        self,
+    ) -> float:
+        analyticsStartDate = datetime.fromisoformat(
+            self.inputData.startDate
+        )
+        analyticsEndDate = datetime.fromisoformat(
+            self.inputData.endDate
+        )
+        datetimeTransactionDate = datetime.fromisoformat(self.date)
+
+        if self.ecoData.oneOff:
+            if (
+                analyticsStartDate
+                <= datetimeTransactionDate
+                <= analyticsEndDate
+            ):
+                return self.amount
+            else:
+                return 0
+        else:
+            overlappingDays = (
+                max(
+                    0,
+                    (
+                        min(analyticsEndDate, datetimeTransactionDate)
+                        - max(
+                            analyticsStartDate,
+                            datetimeTransactionDate,
+                        )
+                    ).days,
+                )
+                + 1
+            )
+            return (
+                self.amount * overlappingDays / self.days_in_period()
+            )
 
 
-def get_total_cost(transactions: Iterable[Transaction]) -> float:
-    """Get total cost of transactions"""
-    return sum(
-        transaction.daily_cost() for transaction in transactions
-    )
+class Analytics:
+    def __init__(self, inputData: AnalyticsInputData):
+        self.inputData = inputData
+        self.outputData = AnalyticsOutputData()
+        self.outputData.transactions = (
+            self.get_transactions_in_period()
+        )
+
+        self.outputData.periodCost = self.get_cost_in_period()
+
+    def get_transactions_in_period(self) -> Iterable[Transaction]:
+        """Get all transactions effective between two dates"""
+        query = {
+            "$and": [
+                {
+                    "username": self.inputData.username,
+                },
+                {
+                    "$or": [
+                        {
+                            "ecoData.oneOff": True,
+                            "date": {
+                                "$gte": self.inputData.startDate,
+                                "$lte": self.inputData.endDate,
+                            },
+                        },
+                        {
+                            "ecoData.oneOff": False,
+                            "ecoData.startDate": {
+                                "$lte": self.inputData.endDate
+                            },
+                            "ecoData.endDate": {
+                                "$gte": self.inputData.startDate
+                            },
+                        },
+                    ]
+                },
+            ]
+        }
+
+        return map(
+            AnalysedTransaction.from_dict, transactionsdb.find(query)
+        )
+
+    def get_cost_in_period(self) -> float:
+        """Get total cost of transactions"""
+        return sum(
+            transaction.outputData.periodCost
+            for transaction in self.outputData.transactions
+        )
 
 
 if __name__ == "__main__":
-    print(
-        get_total_cost_of_transactions_effective_between_dates(
-            "2023-10-27", "2023-10-27", "test0"
-        )
+    inputData = AnalyticsInputData(
+        username="test0",
+        startDate="2023-10-01",
+        endDate="2023-10-31",
     )
+    analytics = Analytics(inputData)
+    print(list(analytics.outputData.transactions))

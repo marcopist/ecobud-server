@@ -13,6 +13,7 @@ transactionsdb = collections["transactions"]
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class TinkTransactionData:
     status: str
@@ -77,76 +78,11 @@ class Transaction:
 
     @classmethod
     def from_tink(
-        cls, username: str, payload: Dict[str, Any]
+        cls,
+        username: str,
+        payload: Dict[str, Any],
     ) -> "Transaction":
-        """Create a transaction from a Tink payload
-            Example:
-
-        {
-          "accountId": "4a2945d1481c4f4b98ab1b135afd96c0",
-          "amount": {
-            "currencyCode": "GBP",
-            "value": {
-              "scale": "1",
-              "unscaledValue": "-1300"
-            }
-          },
-          "bookedDateTime": "2020-12-15T09:25:12Z",
-          "categories": {
-            "pfm": {
-              "id": "d8f37f7d19c240abb4ef5d5dbebae4ef",
-              "name": ""
-            }
-          },
-          "counterparties": {
-            "payee": {
-              "identifiers": {
-                "financialInstitution": {
-                  "accountNumber": "SE6651152689155983335132"
-                }
-              },
-              "name": "Joe Doe"
-            },
-            "payer": {
-              "identifiers": {
-                "financialInstitution": {
-                  "accountNumber": "SE3778591419782047144807"
-                }
-              },
-              "name": "Jane Doe"
-            }
-          },
-          "dates": {
-            "booked": "2020-12-15",
-            "value": "2020-12-15"
-          },
-          "descriptions": {
-            "detailed": {
-              "unstructured": "PAYMENT *SUBSCRIPTION 123/987"
-            },
-            "display": "Tesco",
-            "original": "TESCO STORES 3297"
-          },
-          "id": "d8f37f7d19c240abb4ef5d5dbebae4ef",
-          "identifiers": {
-            "providerTransactionId": "500015d3-acf3-48cc-9918-9e53738d3692"
-          },
-          "merchantInformation": {
-            "merchantCategoryCode": "4111",
-            "merchantName": "Local Transit Company"
-          },
-          "providerMutability": "MUTABILITY_UNDEFINED",
-          "reference": "RF12310007894321",
-          "status": "BOOKED",
-          "transactionDateTime": "2020-12-14T18:31:54Z",
-          "types": {
-            "financialInstitutionTypeCode": "DEB",
-            "type": "DEFAULT"
-          },
-          "valueDateTime": "2020-12-15T09:25:12Z"
-        }
-
-        """
+        """Create a transaction from a Tink payload"""
 
         id_ = payload["id"]
         unscaledValue = payload["amount"]["value"]["unscaledValue"]
@@ -184,33 +120,10 @@ class Transaction:
         else:
             return self.amount / self.days_in_period()
 
-    def days_in_period(self) -> float:
-        start = datetime.fromisoformat(self.ecoData.startDate)
-        end = datetime.fromisoformat(self.ecoData.endDate)
-        return (end - start).days + 1
-
-    def get_cost_in_period(
-        self, start: datetime, end: datetime
-    ) -> float:
-        if self.ecoData.oneOff:
-            date = datetime.fromisoformat(self.date)
-            if date >= start and date <= end:
-                return self.amount
-            else:
-                return 0
-        else:
-            ecoStartDate = datetime.fromisoformat(
-                self.ecoData.startDate
-            )
-            ecoEndDate = datetime.fromisoformat(self.ecoData.endDate)
-            days_overlap = (
-                min(end, ecoEndDate) - max(start, ecoStartDate)
-            ).days + 1
-            return self.amount * days_overlap / self.days_in_period()
-
 
 def sync_transactions(
-    username: str, noPages: int = 1
+    username: str,
+    noPages: int = 1,
 ) -> Dict[str, Any]:
     transactions = get_user_transactions(username, noPages=noPages)
     cnt = 0
@@ -228,6 +141,14 @@ def sync_transactions(
         if existing:
             existingTransaction = Transaction.from_dict(existing)
             existingTransaction.tinkData = tinkTransaction.tinkData
+            transactionsdb.find_one_and_replace(
+                {
+                    "id": tinkTransaction.id,
+                    "username": tinkTransaction.username,
+                },
+                asdict(existingTransaction),
+                upsert=False,
+            )
 
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))

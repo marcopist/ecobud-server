@@ -2,13 +2,13 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from ecobud.model.transactions import (
+    TinkTransactionData,
     Transaction,
+    TransactionDescription,
+    TransactionEcoData,
     get_specific_transaction,
     get_transactions,
     update_transaction,
-    TinkTransactionData,
-    TransactionDescription,
-    TransactionEcoData,
 )
 
 example_tink_payload = {
@@ -74,10 +74,13 @@ class TestTransaction(unittest.TestCase):
         transaction = Transaction.from_dict(example_transaction_dict)
         assert transaction == example_transaction
 
+
 @patch("ecobud.model.transactions.Process")
 @patch("ecobud.model.transactions.sync_transactions")
 @patch("ecobud.model.transactions.transactionsdb")
-def test_get_transactions(mock_transactionsdb, mock_sync_transactions, mock_process):
+def test_get_transactions(
+    mock_transactionsdb, mock_sync_transactions, mock_process
+):
     mock_transactionsdb.find.return_value.sort.return_value.limit.return_value = [
         {"username": "test", "id": "1"},
         {"username": "test", "id": "2"},
@@ -88,11 +91,8 @@ def test_get_transactions(mock_transactionsdb, mock_sync_transactions, mock_proc
     assert transactions[1]["id"] == "2"
 
 
-
 @patch("ecobud.model.transactions.transactionsdb")
-def test_get_specific_transaction(
-    mock_transactionsdb
-):
+def test_get_specific_transaction(mock_transactionsdb):
     mock_transactionsdb.find_one.return_value = {
         "username": "test",
         "id": "1",
@@ -118,11 +118,15 @@ def test_update_transaction(mock_transactionsdb):
     )
     assert resp == True
     assert mock_transactionsdb.find_one_and_replace.called == True
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][0] == {
+    assert mock_transactionsdb.find_one_and_replace.call_args[0][
+        0
+    ] == {
         "id": "1",
         "username": "test",
     }
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][1] == {
+    assert mock_transactionsdb.find_one_and_replace.call_args[0][
+        1
+    ] == {
         "username": "test",
         "id": "1",
         "amount": 1.0,

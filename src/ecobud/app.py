@@ -7,6 +7,12 @@ from ecobud.connections.tink import (
     get_bank_connection_url,
     get_user_transactions,
 )
+from ecobud.model.analytics import (
+    get_total_cost,
+    get_total_cost_of_transactions_effective_between_dates,
+    get_transactions_effective_between_dates,
+    get_transactions_effective_on_date,
+)
 from ecobud.model.transactions import (
     get_specific_transaction,
     get_transactions,
@@ -18,12 +24,6 @@ from ecobud.model.user import (
     WrongPassword,
     create_user,
     login_user,
-)
-from ecobud.model.analytics import (
-    get_transactions_effective_on_date,
-    get_transactions_effective_between_dates,
-    get_total_cost,
-    get_total_cost_of_transactions_effective_between_dates,
 )
 
 logging.basicConfig(
@@ -140,7 +140,8 @@ def transaction_put(transaction_id):
 
 
 @app.route(
-    "/analytics/transactions/<start_date>/<end_date>", methods=["GET"],
+    "/analytics/transactions/<start_date>/<end_date>",
+    methods=["GET"],
 )
 def analytics_transactions_get(start_date, end_date):
     logger.debug(
