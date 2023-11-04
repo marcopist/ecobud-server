@@ -1,16 +1,23 @@
 import unittest
-from datetime import datetime
-from ecobud.model.analytics import (
-    AnalysedTransaction,
-    AnalyticsInputData,
-    Analytics,
-    get_analytics,
-    AnalyticsOutputData,
-)
-from ecobud.model.transactions import Transaction, TransactionDescription, TransactionEcoData, TinkTransactionData
-import pytest
 import unittest.mock as mock
 from dataclasses import asdict
+from datetime import datetime
+
+import pytest
+
+from ecobud.model.analytics import (
+    AnalysedTransaction,
+    Analytics,
+    AnalyticsInputData,
+    AnalyticsOutputData,
+    get_analytics,
+)
+from ecobud.model.transactions import (
+    TinkTransactionData,
+    Transaction,
+    TransactionDescription,
+    TransactionEcoData,
+)
 
 
 @pytest.mark.parametrize(
@@ -120,7 +127,7 @@ def test_get_cost_in_analytics_period(transaction_date, one_off, expected_cost):
                     inputData=AnalyticsInputData(username="test_user", startDate="2022-01-01", endDate="2022-01-15"),
                 ),
             ],
-            10/31*15,
+            10 / 31 * 15,
         ),
     ],
 )

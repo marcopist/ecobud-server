@@ -34,3 +34,6 @@ source = ["src/ecobud"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 80
+
+[tool.isort]
+profile = "black"
