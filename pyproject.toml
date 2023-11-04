@@ -18,11 +18,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pytest", "isort", "jsondiff"]
+dev = ["black", "pytest", "isort", "jsondiff", "coverage"]
 
 [build-system]
 requires = ["setuptools"]
 
 [tool.black]
 line-length = 120
-target-version = ["py37"]
+target-version = ["py310"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/ecobud"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
