@@ -104,7 +104,7 @@ def transaction_put(transaction_id):
         logger.debug(f"Wrong username")
         return {"error": "Wrong username"}, 401
 
-    if transaction_id != transaction["id"]:
+    if transaction_id != transaction["_id"]:
         logger.debug(f"Wrong transaction id")
         return {"error": "Wrong transaction id"}, 401
 

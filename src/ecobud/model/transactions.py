@@ -65,7 +65,7 @@ class TransactionDescription:
 @dataclass
 class Transaction:
     username: str
-    id: str
+    _id: str
     amount: float
     currency: str
     date: str
@@ -82,7 +82,7 @@ class Transaction:
     ) -> "Transaction":
         """Create a transaction from a Tink payload"""
 
-        id_ = payload["id"]
+        _id = payload["id"]
         unscaledValue = payload["amount"]["value"]["unscaledValue"]
         scale = payload["amount"]["value"]["scale"]
         amount = float(unscaledValue) / (10 ** int(scale))
@@ -99,7 +99,7 @@ class Transaction:
 
         return cls(
             username=username,
-            id=id_,
+            _id=_id,
             amount=amount,
             currency=currency,
             date=transactionDate,
@@ -123,7 +123,7 @@ def sync_transactions(
         tinkTransaction = Transaction.from_tink(username, transaction_dict)
         existing = transactionsdb.find_one(
             {
-                "id": tinkTransaction.id,
+                "_id": tinkTransaction._id,
                 "username": tinkTransaction.username,
             },
         )
@@ -133,7 +133,7 @@ def sync_transactions(
             existingTransaction.tinkData = tinkTransaction.tinkData
             transactionsdb.find_one_and_replace(
                 {
-                    "id": tinkTransaction.id,
+                    "_id": tinkTransaction._id,
                     "username": tinkTransaction.username,
                 },
                 asdict(existingTransaction),
@@ -144,7 +144,7 @@ def sync_transactions(
             transactionsdb.insert_one(asdict(tinkTransaction))
 
         cnt += 1
-    return {"message": f"{cnt} transactions synced"}
+    return True
 
 
 def get_transactions(username: str) -> Dict[str, Any]:
@@ -156,14 +156,11 @@ def get_transactions(username: str) -> Dict[str, Any]:
     async_process.start()
 
     transactions = list(transactionsdb.find({"username": username, "ignore": False}).sort("date", -1).limit(100))
-    transnoid = [{k: v for k, v in t.items() if k != "_id"} for t in transactions]
-    return transnoid
+    return transactions
 
-
-def get_specific_transaction(username: str, transaction_id: str) -> Dict[str, Any]:
-    logger.debug(f"Getting transaction {transaction_id} for {username}")
-    transaction = transactionsdb.find_one({"username": username, "id": transaction_id})
-    transaction = {k: v for k, v in transaction.items() if k != "_id"}
+def get_specific_transaction(username: str, _id: str) -> Dict[str, Any]:
+    logger.debug(f"Getting transaction {_id} for {username}")
+    transaction = transactionsdb.find_one({"username": username, "_id": _id})
     logging.debug(f"Got transaction {transaction}")
     return transaction
 
@@ -171,13 +168,13 @@ def get_specific_transaction(username: str, transaction_id: str) -> Dict[str, An
 def update_transaction(transaction: Dict[str, Any]) -> bool:
     transactionsdb.find_one_and_replace(
         {
-            "id": transaction["id"],
+            "_id": transaction["_id"],
             "username": transaction["username"],
         },
         transaction,
         upsert=False,
     )
-    logger.debug(f"Finished mongo interaction for transaction {transaction['id']}")
+    logger.debug(f"Finished mongo interaction for transaction {transaction['_id']}")
     return True
 
 
