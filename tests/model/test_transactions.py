@@ -1,128 +1,157 @@
 import unittest
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch, MagicMock
+import pytest
 from ecobud.model.transactions import (
-    TinkTransactionData,
     Transaction,
     TransactionDescription,
     TransactionEcoData,
-    get_specific_transaction,
-    get_transactions,
-    update_transaction,
+    TinkTransactionData,
+    sync_transactions,
 )
 
-example_tink_payload = {
-    "id": "1",
-    "amount": {
-        "value": {"unscaledValue": "100", "scale": "2"},
-        "currencyCode": "USD",
-    },
-    "dates": {"booked": "2020-12-15"},
-    "status": "BOOKED",
-    "accountId": "123",
-    "username": "test",
-    "descriptions": {
-        "detailed": {
-            "unstructured": "test",
-        },
-        "display": "test",
-        "original": "test",
-    },
-}
 
-example_transaction_dict = {
-    "username": "test",
-    "id": "1",
-    "amount": 1.0,
-    "currency": "USD",
-    "date": "2020-12-15",
-    "description": {
-        "detailed": "test",
-        "display": "test",
-        "original": "test",
-        "user": "test",
-    },
-    "ecoData": {"oneOff": True},
-    "tinkData": {"status": "BOOKED", "accountId": "123"},
-}
+class TestTransactionDescription(unittest.TestCase):
+    def test_from_tink(self):
+        tink_payload = {
+            "descriptions": {
+                "detailed": {"unstructured": "PAYMENT *SUBSCRIPTION 123/987"},
+                "display": "Tesco",
+                "original": "TESCO STORES 3297",
+            }
+        }
 
-example_transaction = Transaction(
-    username="test",
-    id="1",
-    amount=1.0,
-    currency="USD",
-    date="2020-12-15",
-    description=TransactionDescription(detailed="test", display="test", original="test", user="test"),
-    ecoData=TransactionEcoData(oneOff=True),
-    tinkData=TinkTransactionData(
-        status="BOOKED",
-        accountId="123",
-    ),
-)
+        expected_transaction_description = TransactionDescription(
+            detailed="PAYMENT *SUBSCRIPTION 123/987",
+            display="Tesco",
+            original="TESCO STORES 3297",
+            user="Tesco",
+        )
+
+        actual_transaction_description = TransactionDescription.from_tink(tink_payload)
+
+        self.assertEqual(actual_transaction_description, expected_transaction_description)
 
 
 class TestTransaction(unittest.TestCase):
     def test_from_tink(self):
-        transaction = Transaction.from_tink("test", example_tink_payload)
-        assert transaction == example_transaction
+        tink_payload = {
+            "id": "123",
+            "amount": {"value": {"unscaledValue": 1000, "scale": 2}, "currencyCode": "USD"},
+            "dates": {"booked": "2022-01-01"},
+            "status": "BOOKED",
+            "accountId": "abc123",
+            "descriptions": {
+                "detailed": {"unstructured": "PAYMENT *SUBSCRIPTION 123/987"},
+                "display": "Tesco",
+                "original": "TESCO STORES 3297",
+            },
+        }
+
+        expected_transaction = Transaction(
+            username="test_user",
+            _id="123",
+            amount=10.0,
+            currency="USD",
+            date="2022-01-01",
+            description=TransactionDescription.from_tink(tink_payload),
+            ecoData=TransactionEcoData(),
+            tinkData=TinkTransactionData(status="BOOKED", accountId="abc123"),
+        )
+
+        actual_transaction = Transaction.from_tink("test_user", tink_payload)
+
+        self.assertEqual(actual_transaction, expected_transaction)
 
     def test_from_dict(self):
-        transaction = Transaction.from_dict(example_transaction_dict)
-        assert transaction == example_transaction
-
-
-@patch("ecobud.model.transactions.Process")
-@patch("ecobud.model.transactions.sync_transactions")
-@patch("ecobud.model.transactions.transactionsdb")
-def test_get_transactions(mock_transactionsdb, mock_sync_transactions, mock_process):
-    mock_transactionsdb.find.return_value.sort.return_value.limit.return_value = [
-        {"username": "test", "id": "1"},
-        {"username": "test", "id": "2"},
-    ]
-    transactions = get_transactions("test")
-    assert len(transactions) == 2
-    assert transactions[0]["id"] == "1"
-    assert transactions[1]["id"] == "2"
-
-
-@patch("ecobud.model.transactions.transactionsdb")
-def test_get_specific_transaction(mock_transactionsdb):
-    mock_transactionsdb.find_one.return_value = {
-        "username": "test",
-        "id": "1",
-    }
-    transaction = get_specific_transaction("test", "1")
-    assert transaction["id"] == "1"
-    assert transaction["username"] == "test"
-
-
-@patch("ecobud.model.transactions.transactionsdb")
-def test_update_transaction(mock_transactionsdb):
-    resp = update_transaction(
-        {
-            "username": "test",
-            "id": "1",
-            "amount": 1.0,
+        transaction_dict = {
+            "username": "test_user",
+            "_id": "123",
+            "amount": 10.0,
             "currency": "USD",
-            "date": "2020-12-15",
-            "description": None,
-            "ecoData": None,
-            "tinkData": None,
+            "date": "2022-01-01",
+            "description": {
+                "detailed": "PAYMENT *SUBSCRIPTION 123/987",
+                "display": "Tesco",
+                "original": "TESCO STORES 3297",
+                "user": "Tesco",
+            },
+            "ecoData": {},
+            "tinkData": {"status": "BOOKED", "accountId": "abc123"},
+            "ignore": False,
         }
-    )
-    assert resp == True
-    assert mock_transactionsdb.find_one_and_replace.called == True
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][0] == {
-        "id": "1",
-        "username": "test",
-    }
-    assert mock_transactionsdb.find_one_and_replace.call_args[0][1] == {
-        "username": "test",
-        "id": "1",
-        "amount": 1.0,
+
+        expected_transaction = Transaction(
+            username="test_user",
+            _id="123",
+            amount=10.0,
+            currency="USD",
+            date="2022-01-01",
+            description=TransactionDescription(
+                detailed="PAYMENT *SUBSCRIPTION 123/987",
+                display="Tesco",
+                original="TESCO STORES 3297",
+                user="Tesco",
+            ),
+            ecoData=TransactionEcoData(),
+            tinkData=TinkTransactionData(status="BOOKED", accountId="abc123"),
+            ignore=False,
+        )
+
+        actual_transaction = Transaction.from_dict(transaction_dict)
+
+        self.assertEqual(actual_transaction, expected_transaction)
+
+
+@pytest.mark.parametrize("transaction_exists_in_db", [True, False])
+@patch("ecobud.model.transactions.get_user_transactions")
+@patch("ecobud.model.transactions.transactionsdb")
+def test_sync_transactions(mock_transactionsdb, mock_get_user_transactions, transaction_exists_in_db):
+    # Arrange
+    username = "test_user"
+    noPages = 1
+    mock_get_user_transactions.return_value = [
+        {
+            "id": "123",
+            "username": username,
+            "amount": {"value": {"unscaledValue": 1000, "scale": 2}, "currencyCode": "USD"},
+            "dates": {"booked": "2022-01-01"},
+            "status": "BOOKED",
+            "accountId": "abc123",
+            "descriptions": {
+                "detailed": {"unstructured": "PAYMENT *SUBSCRIPTION 123/987"},
+                "display": "Tesco",
+                "original": "TESCO STORES 3297",
+            },
+        }
+    ]
+
+    existing = {
+        "_id": "123",
+        "username": username,
+        "amount": 10.0,
         "currency": "USD",
-        "date": "2020-12-15",
-        "description": None,
-        "ecoData": None,
-        "tinkData": None,
+        "date": "2022-01-01",
+        "description": {
+            "detailed": "PAYMENT *SUBSCRIPTION 123/987",
+            "display": "Tesco",
+            "original": "TESCO STORES 3297",
+            "user": "Tesco",
+        },
+        "ecoData": {},
+        "tinkData": {"status": "BOOKED", "accountId": "abc123"},
+        "ignore": False,
     }
+
+    mock_transactionsdb.find_one.return_value = existing if transaction_exists_in_db else None
+
+    # Act
+    result = sync_transactions(username, noPages)
+
+    # Assert
+    assert result
+    mock_get_user_transactions.assert_called_once_with(username, noPages=noPages)
+    mock_transactionsdb.find_one.assert_called_once()
+    if transaction_exists_in_db:
+        mock_transactionsdb.find_one_and_replace.assert_called_once()
+    else:
+        mock_transactionsdb.insert_one.assert_called_once()

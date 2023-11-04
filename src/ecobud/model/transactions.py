@@ -118,7 +118,6 @@ def sync_transactions(
     noPages: int = 1,
 ) -> Dict[str, Any]:
     transactions = get_user_transactions(username, noPages=noPages)
-    cnt = 0
     for transaction_dict in transactions:
         tinkTransaction = Transaction.from_tink(username, transaction_dict)
         existing = transactionsdb.find_one(
@@ -143,7 +142,6 @@ def sync_transactions(
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))
 
-        cnt += 1
     return True
 
 
