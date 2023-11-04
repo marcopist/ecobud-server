@@ -82,21 +82,46 @@ def test_get_cost_in_analytics_period(transaction_date, one_off, expected_cost):
     assert analysedTransaction.get_cost_in_analytics_period() == expected_cost
 
 
-# @pytest.mark.parametrize("username, start_date, end_date, expected_transactions", [
-#     ("test_user", "2022-01-01", "2022-01-31", ["transaction1", "transaction2"]),
-#     # Add more test cases as needed
-# ])
-# @mock.patch("ecobud.model.analytics.transactionsdb.find")
-# def test_get_transactions_in_period(mock_find, username, start_date, end_date, expected_transactions):
-#     # Arrange
-#     mock_find.return_value = expected_transactions
-#     analytics = Analytics(inputData=AnalyticsInputData(username=username, startDate=start_date, endDate=end_date))
+@pytest.mark.parametrize(
+    "username, start_date, end_date, transactions",
+    [
+        (
+            "test_user",
+            "2022-01-01",
+            "2022-01-15",
+            [
+                AnalysedTransaction(
+                    transaction=Transaction(
+                        _id="123",
+                        username="test_user",
+                        amount=10.0,
+                        currency="USD",
+                        date="2022-01-01",
+                        description=TransactionDescription(
+                            detailed="PAYMENT *SUBSCRIPTION 123/987",
+                            display="Tesco",
+                            original="TESCO STORES 3297",
+                            user="Tesco",
+                        ),
+                        ecoData=TransactionEcoData(startDate="2022-01-01", endDate="2022-01-31", oneOff=False),
+                        tinkData=TinkTransactionData(status="BOOKED", accountId="abc123"),
+                        ignore=False,
+                    ),
+                    inputData=AnalyticsInputData(username="test_user", startDate="2022-01-01", endDate="2022-01-15"),
+                ),
+            ],
+        ),
+    ],
+)
+@mock.patch("ecobud.model.analytics.transactionsdb.find")
+def test_get_transactions_in_period(mock_find, username, start_date, end_date, transactions):
+    # Arrange
+    mock_find.return_value = []
+    analytics = Analytics(inputData=AnalyticsInputData(username=username, startDate=start_date, endDate=end_date))
+    analytics.outputData.transactions = transactions
 
-#     # Act
-#     actual_transactions = list(analytics.get_transactions_in_period())
-
-#     # Assert
-#     assert actual_transactions == expected_transactions
+    # Assert
+    assert analytics.outputData.transactions == transactions
 
 
 @pytest.mark.parametrize(
