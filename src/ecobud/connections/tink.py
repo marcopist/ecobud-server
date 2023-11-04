@@ -5,7 +5,12 @@ import urllib.parse
 import cachetools.func
 import requests as re
 
-from ecobud.config import SELF_BASE_URL, TINK_BASE_URL, TINK_CLIENT_ID, TINK_CLIENT_SECRET
+from ecobud.config import (
+    SELF_BASE_URL,
+    TINK_BASE_URL,
+    TINK_CLIENT_ID,
+    TINK_CLIENT_SECRET,
+)
 from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)

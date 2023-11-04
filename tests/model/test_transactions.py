@@ -1,14 +1,16 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 from ecobud.model.transactions import (
+    TinkTransactionData,
     Transaction,
     TransactionDescription,
     TransactionEcoData,
-    TinkTransactionData,
-    sync_transactions,
+    get_specific_transaction,
     get_transactions,
-    get_specific_transaction
+    sync_transactions,
 )
 
 

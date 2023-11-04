@@ -5,8 +5,18 @@ from flask import Flask, request, session
 from ecobud.config import FLASK_SECRET_KEY
 from ecobud.connections.tink import get_bank_connection_url, get_user_transactions
 from ecobud.model.analytics import get_analytics
-from ecobud.model.transactions import get_specific_transaction, get_transactions, update_transaction
-from ecobud.model.user import UserAlreadyExists, UserNotFound, WrongPassword, create_user, login_user
+from ecobud.model.transactions import (
+    get_specific_transaction,
+    get_transactions,
+    update_transaction,
+)
+from ecobud.model.user import (
+    UserAlreadyExists,
+    UserNotFound,
+    WrongPassword,
+    create_user,
+    login_user,
+)
 
 logging.basicConfig(
     level=logging.DEBUG,

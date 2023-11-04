@@ -155,6 +155,7 @@ def get_transactions(username: str) -> Dict[str, Any]:
     transactions = list(transactionsdb.find({"username": username, "ignore": False}).sort("date", -1).limit(100))
     return transactions
 
+
 def get_specific_transaction(username: str, _id: str) -> Dict[str, Any]:
     logger.debug(f"Getting transaction {_id} for {username}")
     transaction = transactionsdb.find_one({"username": username, "_id": _id})
