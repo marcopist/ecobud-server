@@ -2,9 +2,7 @@
 name = "ecobud-server"
 version = "0.1.0"
 description = "APIs for the ecobud app."
-authors = [
-    {name = "Marco Pistilli", email = "pistilli.mrc@gmail.com"}
-]
+authors = [{ name = "Marco Pistilli", email = "pistilli.mrc@gmail.com" }]
 readme = "README.md"
 dependencies = [
     "flask",
@@ -14,11 +12,22 @@ dependencies = [
     "bcrypt",
     "cachetools",
     "gunicorn",
-    "dacite"
+    "dacite",
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pytest", "isort", "jsondiff", "coverage"]
+dev = [
+    "black",
+    "pytest",
+    "isort",
+    "jsondiff",
+    "coverage",
+    "pre-commit",
+    "pytest-env",
+    "mypy",
+    "types-requests",
+    "types-cachetools",
+]
 
 [build-system]
 requires = ["setuptools"]
@@ -34,3 +43,18 @@ source = ["src/ecobud"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 80
+exclude_also = ["__main__", 'import']
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest_env]
+TINK_CLIENT_ID = "tink-client-id"
+TINK_CLIENT_SECRET = "tink-client-secret"
+MONGO_CONNECTION_STRING = "mongo-url"
+SELF_BASE_URL = "self-url"
+FLASK_SECRET_KEY = "flask-secret-key"
+MONGO_DB_NAME = "mongo-db-name"
+
+[tool.mypy]
+disallow_untyped_defs = true

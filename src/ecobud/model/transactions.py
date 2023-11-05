@@ -1,13 +1,13 @@
 import logging
 from dataclasses import asdict, dataclass
-from datetime import datetime
 from multiprocessing import Process
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from dacite import from_dict
 
 from ecobud.connections.mongo import collections
 from ecobud.connections.tink import get_user_transactions
+from ecobud.utils import JSONDict, JSONList, JSONType
 
 transactionsdb = collections["transactions"]
 
@@ -35,7 +35,7 @@ class TransactionDescription:
     user: Optional[str]
 
     @classmethod
-    def from_tink(cls, payload):
+    def from_tink(cls, payload: JSONDict) -> "TransactionDescription":
         """Create a transaction description from a Tink payload
             Example:
 
@@ -118,7 +118,6 @@ def sync_transactions(
     noPages: int = 1,
 ) -> Dict[str, Any]:
     transactions = get_user_transactions(username, noPages=noPages)
-    cnt = 0
     for transaction_dict in transactions:
         tinkTransaction = Transaction.from_tink(username, transaction_dict)
         existing = transactionsdb.find_one(
@@ -143,7 +142,6 @@ def sync_transactions(
         else:
             transactionsdb.insert_one(asdict(tinkTransaction))
 
-        cnt += 1
     return True
 
 
@@ -157,6 +155,7 @@ def get_transactions(username: str) -> Dict[str, Any]:
 
     transactions = list(transactionsdb.find({"username": username, "ignore": False}).sort("date", -1).limit(100))
     return transactions
+
 
 def get_specific_transaction(username: str, _id: str) -> Dict[str, Any]:
     logger.debug(f"Getting transaction {_id} for {username}")

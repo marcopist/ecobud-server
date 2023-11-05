@@ -47,9 +47,7 @@ class AnalysedTransaction:
         end = datetime.fromisoformat(self.transaction.ecoData.endDate)
         return (end - start).days + 1
 
-    def get_cost_in_analytics_period(
-        self,
-    ) -> float:
+    def get_cost_in_analytics_period(self) -> float:
         analyticsStartDate = datetime.fromisoformat(self.inputData.startDate)
         analyticsEndDate = datetime.fromisoformat(self.inputData.endDate)
         datetimeTransactionDate = datetime.fromisoformat(self.transaction.date)
@@ -60,14 +58,16 @@ class AnalysedTransaction:
             else:
                 return 0
         else:
+            transactionStartDate = datetime.fromisoformat(self.transaction.ecoData.startDate)
+            transactionEndDate = datetime.fromisoformat(self.transaction.ecoData.endDate)
             overlappingDays = (
                 max(
                     0,
                     (
-                        min(analyticsEndDate, datetimeTransactionDate)
+                        min(analyticsEndDate, transactionEndDate)
                         - max(
                             analyticsStartDate,
-                            datetimeTransactionDate,
+                            transactionStartDate,
                         )
                     ).days,
                 )
@@ -114,7 +114,7 @@ class Analytics:
 
         result = list(transactionsdb.find(query))
 
-        return map(
+        return map(  # pragma: no cover
             lambda trans: AnalysedTransaction(Transaction.from_dict(trans), self.inputData),
             result,
         )

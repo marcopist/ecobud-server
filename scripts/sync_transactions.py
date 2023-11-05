@@ -1,4 +1,4 @@
-from ecobud.model.transactions import transactionsdb, sync_transactions
+from ecobud.model.transactions import sync_transactions, transactionsdb
 
 ### Remove all transactions from the database
 transactionsdb.delete_many({})

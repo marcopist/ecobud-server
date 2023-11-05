@@ -1,12 +1,10 @@
 import logging
 
 import bcrypt
-import requests as re
 
-from ecobud.config import SELF_BASE_URL
 from ecobud.connections import tink
 from ecobud.connections.mongo import collections
-from ecobud.utils import curl, fmt_response
+from ecobud.utils import JSONDict, JSONList, JSONType
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class WrongPassword(Exception):
     pass
 
 
-def create_user(username, email, password):
+def create_user(username: str, email: str, password: str) -> bool:
     logger.debug(f"Creating user {username}")
     try:
         user = _get_user(username)
@@ -63,17 +61,20 @@ def create_user(username, email, password):
     return True
 
 
-def login_user(username, password):
+def login_user(username: str, password: str) -> bool:
     logger.debug(f"Logging in user {username}")
     user = _get_user(username)
 
-    encrypted_password = user["password"].encode("utf-8")
+    decoded_encrypted_password: str = user["password"]  # type: ignore
+    encrypted_password = decoded_encrypted_password.encode("utf-8")
+
     if not bcrypt.checkpw(password.encode("utf-8"), encrypted_password):
         logger.debug(f"Wrong password for user {username}")
         raise WrongPassword(f"Wrong password for user {username}")
+    return True
 
 
-def _get_user(username):
+def _get_user(username: str) -> JSONDict:
     logger.debug(f"Getting user {username}")
     user = usersdb.find_one({"username": username})
     if user is None:
