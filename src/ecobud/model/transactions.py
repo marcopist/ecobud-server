@@ -7,6 +7,7 @@ from dacite import from_dict
 
 from ecobud.connections.mongo import collections
 from ecobud.connections.tink import get_user_transactions
+from ecobud.utils import JSONDict, JSONList, JSONType
 
 transactionsdb = collections["transactions"]
 
@@ -34,7 +35,7 @@ class TransactionDescription:
     user: Optional[str]
 
     @classmethod
-    def from_tink(cls, payload):
+    def from_tink(cls, payload: JSONDict) -> "TransactionDescription":
         """Create a transaction description from a Tink payload
             Example:
 

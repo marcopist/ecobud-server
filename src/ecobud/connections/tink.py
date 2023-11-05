@@ -10,7 +10,7 @@ from ecobud.config import (
     TINK_CLIENT_ID,
     TINK_CLIENT_SECRET,
 )
-from ecobud.utils import JSONType, curl, fmt_response
+from ecobud.utils import JSONDict, JSONType, curl, fmt_response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -89,7 +89,7 @@ def create_user(username: str) -> JSONType:
     return response.json()
 
 
-def get_user(username: str) -> JSONType:
+def get_user(username: str) -> JSONDict:
     user_token = get_user_token(username, "user:read")
     url = TINK_BASE_URL + "/api/v1/user"
     headers = {"Authorization": "Bearer " + user_token}

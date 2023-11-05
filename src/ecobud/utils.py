@@ -4,6 +4,9 @@ import curlify  # type: ignore [import-untyped]
 from requests import Response
 
 JSONType = Union[None, bool, str, float, int, List["JSONType"], Dict[str, "JSONType"]]
+JSONDict = Dict[str, JSONType]
+JSONList = List[JSONType]
+JSONRoot = Union[JSONDict, JSONList]
 
 
 def curl(response: Response) -> str:
