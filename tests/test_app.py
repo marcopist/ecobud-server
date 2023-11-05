@@ -230,3 +230,53 @@ def test_transaction_put_success(mock_update_transaction):
     mock_update_transaction.assert_called_once_with(data["transaction"])
     assert response.status_code == 200
     assert response.get_json() == {"success": True}
+
+
+@patch("ecobud.app.update_transaction")
+def test_transaction_put_failure_other_user(mock_update_transaction):
+    # Arrange
+    test_client = app.test_client()
+    with test_client.session_transaction() as sess:
+        sess["username"] = "test_user"
+    data = {"transaction": {"username": "other_user", "_id": "1"}}
+
+    # Act
+    with app.test_request_context("/transactions/1", method="PUT", json=data):
+        response = test_client.put("/transactions/1", json=data)
+
+    # Assert
+    assert response.status_code == 401
+    assert "error" in response.get_json()
+
+
+@patch("ecobud.app.update_transaction")
+def test_transaction_put_failure_not_logged_in(mock_update_transaction):
+    # Arrange
+    test_client = app.test_client()
+    data = {"transaction": {"username": "test_user", "_id": "1"}}
+
+    # Act
+    with app.test_request_context("/transactions/1", method="PUT", json=data):
+        response = test_client.put("/transactions/1", json=data)
+
+    # Assert
+    assert response.status_code == 401
+    assert response.get_json() == {"error": "Not logged in"}
+
+
+@patch("ecobud.app.update_transaction")
+def test_transaction_put_mismatch_id(mock_update_transaction):
+    # Arrange
+    test_client = app.test_client()
+    with test_client.session_transaction() as sess:
+        sess["username"] = "test_user"
+    data = {"transaction": {"username": "test_user", "_id": "id1"}}
+    mock_update_transaction.return_value = None
+
+    # Act
+    with app.test_request_context("/transactions/id2", method="PUT", json=data):
+        response = test_client.put("/transactions/id2", json=data)
+
+    # Assert
+    assert response.status_code == 401
+    assert response.get_json() == {"error": "Wrong transaction id"}
