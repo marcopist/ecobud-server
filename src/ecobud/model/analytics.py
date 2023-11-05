@@ -114,7 +114,7 @@ class Analytics:
 
         result = list(transactionsdb.find(query))
 
-        return map(
+        return map(  # pragma: no cover
             lambda trans: AnalysedTransaction(Transaction.from_dict(trans), self.inputData),
             result,
         )

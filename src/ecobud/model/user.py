@@ -1,12 +1,9 @@
 import logging
 
 import bcrypt
-import requests as re
 
-from ecobud.config import SELF_BASE_URL
 from ecobud.connections import tink
 from ecobud.connections.mongo import collections
-from ecobud.utils import curl, fmt_response
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +68,7 @@ def login_user(username, password):
     if not bcrypt.checkpw(password.encode("utf-8"), encrypted_password):
         logger.debug(f"Wrong password for user {username}")
         raise WrongPassword(f"Wrong password for user {username}")
+    return True
 
 
 def _get_user(username):
