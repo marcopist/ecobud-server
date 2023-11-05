@@ -1,6 +1,5 @@
 import logging
-import sys
-import urllib.parse
+from typing import Dict, Optional
 
 import cachetools.func
 import requests as re
@@ -11,14 +10,14 @@ from ecobud.config import (
     TINK_CLIENT_ID,
     TINK_CLIENT_SECRET,
 )
-from ecobud.utils import curl, fmt_response
+from ecobud.utils import JSONType, curl, fmt_response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_client_token(scope, grant_type="client_credentials"):
+def get_client_token(scope: str, grant_type: str = "client_credentials") -> str:
     url = TINK_BASE_URL + "/api/v1/oauth/token"
     data = {
         "client_id": TINK_CLIENT_ID,
@@ -33,7 +32,7 @@ def get_client_token(scope, grant_type="client_credentials"):
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_user_authorization_code(username, scope, delegate=False, **kwargs):
+def get_user_authorization_code(username: str, scope: str, delegate: bool = False, **kwargs: str) -> str:
     client_token = get_client_token(
         scope="authorization:grant",
         grant_type="client_credentials",
@@ -58,7 +57,7 @@ def get_user_authorization_code(username, scope, delegate=False, **kwargs):
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=10 * 60)
-def get_user_token(username, scope):
+def get_user_token(username: str, scope: str) -> str:
     user_authorization_code = get_user_authorization_code(username, scope)
     url = TINK_BASE_URL + "/api/v1/oauth/token"
     data = {
@@ -73,7 +72,7 @@ def get_user_token(username, scope):
     return response.json()["access_token"]
 
 
-def create_user(username):
+def create_user(username: str) -> JSONType:
     client_token = get_client_token("user:create")
     url = TINK_BASE_URL + "/api/v1/user/create"
     headers = {
@@ -90,7 +89,7 @@ def create_user(username):
     return response.json()
 
 
-def get_user(username):
+def get_user(username: str) -> JSONType:
     user_token = get_user_token(username, "user:read")
     url = TINK_BASE_URL + "/api/v1/user"
     headers = {"Authorization": "Bearer " + user_token}
@@ -100,7 +99,7 @@ def get_user(username):
     return response.json()
 
 
-def delete_user(username):
+def delete_user(username: str) -> JSONType:
     user_token = get_user_token(username, "user:delete")
     url = TINK_BASE_URL + "/api/v1/user/delete"
     headers = {"Authorization": "Bearer " + user_token}
@@ -110,7 +109,7 @@ def delete_user(username):
     return response.json()
 
 
-def get_user_transactions(username, noPages=1):
+def get_user_transactions(username: str, noPages: int = 1) -> JSONType:
     user_token = get_user_token(username, "transactions:read")
     url = TINK_BASE_URL + "/data/v2/transactions"
     headers = {"Authorization": "Bearer " + user_token}
@@ -121,7 +120,7 @@ def get_user_transactions(username, noPages=1):
 
     while page < noPages:
         page += 1
-        params = {"pageToken": next_page_token} if next_page_token else {}
+        params: Dict = {"pageToken": next_page_token} if next_page_token else {}
         response = re.get(url=url, headers=headers, params=params)
         data = response.json()
         logger.debug(f"Sent request {curl(response)}")
@@ -132,7 +131,7 @@ def get_user_transactions(username, noPages=1):
     return transactions
 
 
-def get_bank_connection_url(username):
+def get_bank_connection_url(username: str) -> str:
     user_authorization_code = get_user_authorization_code(
         username,
         scope=(
@@ -162,7 +161,7 @@ def get_bank_connection_url(username):
     return bank_connection_url
 
 
-def register_transaction_webhook(webhook_url=None):
+def register_transaction_webhook(webhook_url: Optional[str] = None) -> JSONType:
     client_token = get_client_token("webhook-endpoints")
     url = TINK_BASE_URL + "/events/v2/webhook-endpoints"
     if not webhook_url:

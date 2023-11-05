@@ -24,6 +24,9 @@ dev = [
     "coverage",
     "pre-commit",
     "pytest-env",
+    "mypy",
+    "types-requests",
+    "types-cachetools",
 ]
 
 [build-system]
@@ -52,3 +55,6 @@ MONGO_CONNECTION_STRING = "mongo-url"
 SELF_BASE_URL = "self-url"
 FLASK_SECRET_KEY = "flask-secret-key"
 MONGO_DB_NAME = "mongo-db-name"
+
+[tool.mypy]
+disallow_untyped_defs = true

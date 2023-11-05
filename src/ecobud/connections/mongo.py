@@ -1,9 +1,11 @@
+from typing import List
+
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 from ecobud.config import MONGO_CONNECTION_STRING, MONGO_DB_NAME
 
-client = MongoClient(
+client: MongoClient = MongoClient(
     MONGO_CONNECTION_STRING,
     server_api=ServerApi("1"),
 )
@@ -11,11 +13,11 @@ client = MongoClient(
 collections = client[MONGO_DB_NAME]
 
 
-def test_connection():  # pragma: no cover
+def test_connection() -> List[str]:  # pragma: no cover
     return collections.list_collection_names()
 
 
-def get_size():  # pragma: no cover
+def get_size() -> float:  # pragma: no cover
     return collections.command("dbstats")["dataSize"] * 1e-6
 
 
