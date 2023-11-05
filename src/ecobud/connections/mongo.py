@@ -11,11 +11,11 @@ client = MongoClient(
 collections = client[MONGO_DB_NAME]
 
 
-def test_connection():
+def test_connection():  # pragma: no cover
     return collections.list_collection_names()
 
 
-def get_size():
+def get_size():  # pragma: no cover
     return collections.command("dbstats")["dataSize"] * 1e-6
 
 
