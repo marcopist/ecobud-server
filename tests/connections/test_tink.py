@@ -73,22 +73,30 @@ def test_get_user_authorization_code_with_delegate(mock_post, mock_get_client_to
     mock_response = mock_post.return_value
     mock_response.json.return_value = {"code": "test_code"}
 
-    expected_url = "https://api.tink.com/api/v1/oauth/token"
+    expected_url = "https://api.tink.com/api/v1/oauth/authorization-grant/delegate"
+    expected_headers = {
+        "Authorization": "Bearer test_token",
+    }
     expected_data = {
-        "client_id": "client_id",
-        "client_secret": "client_secret",
-        "grant_type": "authorization_code",
-        "code": "code",
-        "scope": "user:read",
+        "external_user_id": "test_user",
+        "scope": "authorization:grant",
         "actor_client_id": "actor_client_id",
+        "id_hint": "hint",
+    }
+
+    kwargs = {
+        "actor_client_id": "actor_client_id",
+        "id_hint": "hint",
     }
 
     # Act
-    actual_code = get_user_authorization_code(username="test_user", scope="authorization:grant", delegate=True)
+    actual_code = get_user_authorization_code(
+        username="test_user", scope="authorization:grant", delegate=True, **kwargs
+    )
 
     # Assert
     mock_get_client_token.assert_called_once_with(scope="authorization:grant", grant_type="client_credentials")
-    mock_post.assert_called_once_with(url=expected_url, data=expected_data)
+    mock_post.assert_called_once_with(url=expected_url, data=expected_data, headers=expected_headers)
     assert actual_code == "test_code"
 
 
