@@ -280,3 +280,90 @@ def test_transaction_put_mismatch_id(mock_update_transaction):
     # Assert
     assert response.status_code == 401
     assert response.get_json() == {"error": "Wrong transaction id"}
+
+
+@patch("ecobud.app.get_analytics")
+@patch("ecobud.app.logger")
+def test_analytics_get_logged_in(mock_logger, mock_get_analytics):
+    # Arrange
+    test_client = app.test_client()
+    with test_client.session_transaction() as sess:
+        sess["username"] = "test_user"
+    mock_get_analytics.return_value = {"data": "analytics_data"}
+
+    # Act
+    response = test_client.get("/analytics/2022-01-01/2022-01-31")
+
+    # Assert
+    mock_get_analytics.assert_called_once_with("2022-01-01", "2022-01-31", "test_user")
+    assert response.status_code == 200
+    assert response.get_json() == {"analytics": {"data": "analytics_data"}}
+
+
+def test_analytics_get_not_logged_in():
+    # Arrange
+    test_client = app.test_client()
+
+    # Act
+    response = test_client.get("/analytics/2022-01-01/2022-01-31")
+
+    # Assert
+    assert response.status_code == 401
+    assert response.get_json() == {"error": "Not logged in"}
+
+
+def test_logout_post_logged_in():
+    # Arrange
+    test_client = app.test_client()
+    with test_client.session_transaction() as sess:
+        sess["username"] = "test_user"
+
+    # Act
+    response = test_client.post("/logout")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.get_json() == {"success": True}
+    with test_client.session_transaction() as sess:
+        assert "username" not in sess
+
+
+def test_logout_post_not_logged_in():
+    # Arrange
+    test_client = app.test_client()
+
+    # Act
+    response = test_client.post("/logout")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.get_json() == {"success": True}
+
+
+@patch("ecobud.app.get_user_transactions")
+def test_tink_transactions_get_logged_in(mock_get_user_transactions):
+    # Arrange
+    test_client = app.test_client()
+    with test_client.session_transaction() as sess:
+        sess["username"] = "test_user"
+    mock_get_user_transactions.return_value = [{"id": "1", "amount": 100}]
+
+    # Act
+    response = test_client.get("/tink/transactions")
+
+    # Assert
+    mock_get_user_transactions.assert_called_once_with("test_user")
+    assert response.status_code == 200
+    assert response.get_json() == {"transactions": [{"id": "1", "amount": 100}]}
+
+
+def test_tink_transactions_get_not_logged_in():
+    # Arrange
+    test_client = app.test_client()
+
+    # Act
+    response = test_client.get("/tink/transactions")
+
+    # Assert
+    assert response.status_code == 401
+    assert response.get_json() == {"error": "Not logged in"}
