@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from ecobud.connections.tink import (
     create_user,
     delete_user,
