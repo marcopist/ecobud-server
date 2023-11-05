@@ -11,6 +11,7 @@ from ecobud.model.transactions import (
     get_specific_transaction,
     get_transactions,
     sync_transactions,
+    update_transaction,
 )
 
 
@@ -228,3 +229,38 @@ def test_get_specific_transaction(mock_transactionsdb):
     # Assert
     mock_transactionsdb.find_one.assert_called_once_with({"username": username, "_id": _id})
     assert actual_transaction == expected_transaction
+
+
+@patch("ecobud.model.transactions.transactionsdb")
+def test_update_transaction_success(mock_transactionsdb):
+    # Arrange
+    transaction = {
+        "_id": "123",
+        "username": "test_user",
+        "amount": 10.0,
+        "currency": "USD",
+        "date": "2022-01-01",
+        "description": {
+            "detailed": "PAYMENT *SUBSCRIPTION 123/987",
+            "display": "Tesco",
+            "original": "TESCO STORES 3297",
+            "user": "Tesco",
+        },
+        "ecoData": {},
+        "tinkData": {"status": "BOOKED", "accountId": "abc123"},
+        "ignore": False,
+    }
+
+    # Act
+    result = update_transaction(transaction)
+
+    # Assert
+    mock_transactionsdb.find_one_and_replace.assert_called_once_with(
+        {
+            "_id": transaction["_id"],
+            "username": transaction["username"],
+        },
+        transaction,
+        upsert=False,
+    )
+    assert result is True
