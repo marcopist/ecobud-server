@@ -5,11 +5,13 @@ import pytest
 from ecobud.connections.tink import (
     create_user,
     delete_user,
+    get_bank_connection_url,
     get_client_token,
     get_user,
     get_user_authorization_code,
     get_user_token,
     get_user_transactions,
+    register_transaction_webhook,
 )
 
 
@@ -60,6 +62,35 @@ def test_get_user_authorization_code(mock_post, mock_get_client_token):
     # Assert
     mock_get_client_token.assert_called_once_with(scope="authorization:grant", grant_type="client_credentials")
     mock_post.assert_called_once_with(url=expected_url, data=expected_data, headers=expected_headers)
+    assert actual_code == "test_code"
+
+
+@patch("ecobud.connections.tink.fmt_response", MagicMock())
+@patch("ecobud.connections.tink.curl", MagicMock())
+@patch("ecobud.connections.tink.get_client_token")
+@patch("ecobud.connections.tink.re.post")
+def test_get_user_authorization_code_with_delegate(mock_post, mock_get_client_token):
+    # Arrange
+    mock_get_client_token.return_value = "test_token"
+    mock_response = mock_post.return_value
+    mock_response.json.return_value = {"code": "test_code"}
+
+    expected_url = "https://api.tink.com/api/v1/oauth/token"
+    expected_data = {
+        "client_id": "client_id",
+        "client_secret": "client_secret",
+        "grant_type": "authorization_code",
+        "code": "code",
+        "scope": "user:read",
+        "actor_client_id": "actor_client_id",
+    }
+
+    # Act
+    actual_code = get_user_authorization_code(username="test_user", scope="authorization:grant", delegate=True)
+
+    # Assert
+    mock_get_client_token.assert_called_once_with(scope="authorization:grant", grant_type="client_credentials")
+    mock_post.assert_called_once_with(url=expected_url, data=expected_data)
     assert actual_code == "test_code"
 
 
@@ -188,3 +219,100 @@ def test_get_user_transactions(mock_get, mock_get_user_token):
     mock_get_user_token.assert_called_once_with("test_user", "transactions:read")
     mock_get.assert_called_once_with(url=expected_url, headers=expected_headers, params={})
     assert actual_transactions == [{"id": "1", "amount": 100}, {"id": "2", "amount": 200}]
+
+
+@patch("ecobud.connections.tink.get_user_authorization_code")
+def test_get_bank_connection_url(mock_get_user_authorization_code):
+    # Arrange
+    mock_get_user_authorization_code.return_value = "test_code"
+    expected_url = (
+        "https://link.tink.com/1.0/transactions/connect-accounts"
+        "?client_id=tink-client-id"  # see pyproject.toml
+        "&redirect_uri=https://console.tink.com/callback"
+        "&authorization_code=test_code"
+        "&market=GB"
+        "&locale=en_US"
+    )
+
+    # Act
+    actual_url = get_bank_connection_url(username="test_user")
+
+    # Assert
+    mock_get_user_authorization_code.assert_called_once_with(
+        "test_user",
+        scope=(
+            "authorization:read,"
+            "authorization:grant,"
+            "credentials:refresh,"
+            "credentials:read,"
+            "credentials:write,"
+            "providers:read,"
+            "user:read"
+        ),
+        delegate=True,
+        actor_client_id="df05e4b379934cd09963197cc855bfe9",
+        id_hint="hint",
+    )
+    assert actual_url == expected_url
+
+
+@patch("ecobud.connections.tink.fmt_response", MagicMock())
+@patch("ecobud.connections.tink.curl", MagicMock())
+@patch("ecobud.connections.tink.get_client_token")
+@patch("ecobud.connections.tink.re.post")
+def test_register_transaction_webhook(mock_post, mock_get_client_token):
+    # Arrange
+    mock_get_client_token.return_value = "test_token"
+    mock_response = mock_post.return_value
+    mock_response.json.return_value = {"status": "registered"}
+
+    expected_url = "https://api.tink.com/events/v2/webhook-endpoints"
+    expected_headers = {
+        "Authorization": "Bearer test_token",
+        "Content-Type": "application/json",
+    }
+    expected_data = {
+        "description": "webhook",
+        "disabled": False,
+        "enabledEvents": ["account-transactions:modified"],
+        "url": "self-url/tink/webhook",
+    }
+
+    # Act
+    actual_response = register_transaction_webhook()
+
+    # Assert
+    mock_get_client_token.assert_called_once_with("webhook-endpoints")
+    mock_post.assert_called_once_with(url=expected_url, json=expected_data, headers=expected_headers)
+    assert actual_response == {"status": "registered"}
+
+
+@patch("ecobud.connections.tink.fmt_response", MagicMock())
+@patch("ecobud.connections.tink.curl", MagicMock())
+@patch("ecobud.connections.tink.get_client_token")
+@patch("ecobud.connections.tink.re.post")
+def test_register_transaction_webhook_with_url(mock_post, mock_get_client_token):
+    # Arrange
+    mock_get_client_token.return_value = "test_token"
+    mock_response = mock_post.return_value
+    mock_response.json.return_value = {"status": "registered"}
+
+    expected_url = "https://api.tink.com/events/v2/webhook-endpoints"
+    expected_headers = {
+        "Authorization": "Bearer test_token",
+        "Content-Type": "application/json",
+    }
+    expected_data = {
+        "description": "webhook",
+        "disabled": False,
+        "enabledEvents": ["account-transactions:modified"],
+        "url": "http://example.com/webhook",
+    }
+
+    # Act
+    actual_response = register_transaction_webhook(webhook_url="http://example.com/webhook")
+
+    # Assert
+    mock_get_client_token.assert_called_once_with("webhook-endpoints")
+    mock_post.assert_called_once_with(url=expected_url, json=expected_data, headers=expected_headers)
+    assert actual_response == {"status": "registered"}
