@@ -1,4 +1,4 @@
-name: Run Tests
+name: Test, coverage, and lint
 
 on:
   push:
@@ -32,3 +32,11 @@ jobs:
     - name: Check coverage
       run: |
         coverage report
+
+    - name: Check isort formatting
+      run: |
+        isort --check-only --diff --recursive src tests
+
+    - name: Check black formatting
+      run: |
+        black --check --diff src tests
